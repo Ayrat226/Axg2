@@ -6,10 +6,15 @@ import type { RunError, TestResult } from '../runner/types';
 
 export type FeedbackDepth = 'brief' | 'standard' | 'deep';
 export type FeedbackTone = 'friendly' | 'neutral' | 'socratic';
+export type TermsStyle = 'ru' | 'ru+en' | 'en-first';
 export interface FeedbackPrefs {
   depth: FeedbackDepth;
   tone: FeedbackTone;
   showTerms: boolean;
+  /** How a term is written: Russian only, Russian with the English equivalent, or English first. */
+  termsStyle?: TermsStyle;
+  /** Show the guiding questions first and the explanation only after the learner asks for it. */
+  socraticDelay?: boolean;
 }
 
 export type ErrorCategory = 'syntax' | 'runtime' | 'logic' | 'edge' | 'timeout' | 'output';
@@ -689,6 +694,11 @@ const OPENERS: Record<FeedbackTone, string[]> = {
   socratic: ['Попробуйте найти причину сами — вот вопросы, которые помогут.'],
 };
 
+export function formatTerm(term: { en: string; ru: string }, style: TermsStyle = 'ru+en'): string {
+  if (style === 'ru') return term.ru;
+  return style === 'en-first' ? `${term.en} — ${term.ru}` : `${term.ru} — ${term.en}`;
+}
+
 /** Shape an explanation for the learner's preferences. */
 export function shape(e: Explanation, p: FeedbackPrefs, seed = 0) {
   const opener = OPENERS[p.tone][seed % OPENERS[p.tone].length];
@@ -698,11 +708,14 @@ export function shape(e: Explanation, p: FeedbackPrefs, seed = 0) {
     summary: e.summary,
     causes: p.depth === 'brief' ? e.causes.slice(0, 1) : e.causes,
     steps: p.depth === 'brief' ? e.steps.slice(0, 1) : e.steps,
-    questions: p.tone === 'socratic' ? e.questions : p.depth === 'deep' ? e.questions.slice(0, 1) : [],
+    questions: p.tone === 'socratic' ? e.questions : p.socraticDelay ? e.questions.slice(0, 2) : p.depth === 'deep' ? e.questions.slice(0, 1) : [],
+    /** With a delay, the explanation stays hidden until requested — only when there is a question to think about. */
+    gated: !!p.socraticDelay && e.questions.length > 0,
     /** Socratic mode hides direct fixes behind a toggle. */
     stepsCollapsed: p.tone === 'socratic',
     deep: p.depth === 'deep' ? e.deep : undefined,
     term: p.showTerms ? e.term : undefined,
+    termLabel: p.showTerms && e.term ? formatTerm(e.term, p.termsStyle) : undefined,
     line: e.line,
     snippet: e.snippet,
     category: e.category,
