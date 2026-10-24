@@ -10,6 +10,8 @@ export const NAV: NavItem[] = [
   { path: '/routes', icon: '🧭', label: 'Маршруты', match: 'routes' },
   { path: '/map', icon: '🗺️', label: 'Карта навыков', match: 'map' },
   { path: '/review', icon: '🔁', label: 'Повторение', match: 'review' },
+  { path: '/daily', icon: '🎯', label: 'Вызов дня', match: 'daily' },
+  { path: '/bughunt', icon: '🐞', label: 'Охота на баги', match: 'bughunt' },
   { path: '/mistakes', icon: '🩹', label: 'Разбор ошибок', match: 'mistakes' },
   { path: '/projects', icon: '🛠️', label: 'Проекты', match: 'projects' },
   { path: '/playground', icon: '🧪', label: 'Песочница', match: 'playground' },
