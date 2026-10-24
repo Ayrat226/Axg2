@@ -19,6 +19,8 @@ import { SkillMapScreen } from './screens/SkillMapScreen';
 import { Progress } from './screens/Progress';
 import { SettingsScreen } from './screens/Settings';
 import { Onboarding } from './screens/Onboarding';
+import { Daily } from './screens/Daily';
+import { BugHunt } from './screens/BugHunt';
 
 export function App() {
   useApplyTheme();
@@ -50,6 +52,8 @@ export function App() {
     case 'practice': screen = <Session key={loc.raw} mode={(loc.query.get('mode') as 'practice') ?? 'practice'} skill={b} />; break;
     case 'review': screen = <Session key={loc.raw} mode="review" route={loc.query.get('route') ?? undefined} />; break;
     case 'mistakes': screen = b === 'practice' ? <Session key={loc.raw} mode="mistakes" /> : <Mistakes />; break;
+    case 'daily': screen = <Daily />; break;
+    case 'bughunt': screen = <BugHunt key={loc.raw} route={b} nonce={loc.query.get('n') ?? undefined} />; break;
     case 'projects': screen = <Projects />; break;
     case 'project': screen = <ProjectView id={b} />; break;
     case 'playground': screen = <Playground />; break;
