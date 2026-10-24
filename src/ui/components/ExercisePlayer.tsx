@@ -13,6 +13,8 @@ import { CodeBlock } from './CodeBlock';
 import { CodeEditor } from './CodeEditor';
 import { ErrorExplain, WrongResultExplain } from './ErrorExplain';
 import { Modal } from './Modal';
+import { AiHint } from './AiHint';
+import { useAiReady } from '../../ai/config';
 import { formatTable } from '../../runner/sqlHarness';
 
 export type PlayerMode = 'practice' | 'diagnostic' | 'review' | 'check' | 'verify' | 'mistakes';
@@ -34,6 +36,14 @@ const KIND_ICON: Record<Exercise['kind'], string> = { mcq: '☑️', predict: '�
 export { KIND_LABEL, KIND_ICON };
 
 const norm = (s: string) => s.replace(/\r\n/g, '\n').split('\n').map((l) => l.trimEnd()).join('\n').replace(/^\n+|\n+$/g, '');
+
+/** Reference answer used only to filter AI replies locally; never sent to the provider. */
+function referenceOf(ex: Exercise): string | undefined {
+  if (ex.kind === 'code' || ex.kind === 'fix') return ex.solution;
+  if (ex.kind === 'parsons') return ex.lines.join('\n');
+  if (ex.kind === 'predict') return ex.answer;
+  return undefined;
+}
 
 function categorize(err: RunError | undefined, failed: TestResult | undefined, bugType?: string): { category: MistakeCategory; errType?: string } {
   if (err) {
@@ -61,6 +71,9 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
   const start = useRef(Date.now());
   const [confidence, setConfidence] = useState<Confidence | undefined>();
   const [hintsShown, setHintsShown] = useState(0);
+  const [aiHints, setAiHints] = useState(0);
+  const aiReady = useAiReady();
+  const draft = useApp((s) => s.drafts[ex.id]);
   const [fails, setFails] = useState(0);
   const [outcome, setOutcome] = useState<ExerciseOutcome | null>(null);
   const [revealAsk, setRevealAsk] = useState(false);
@@ -68,7 +81,13 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
   const diag = mode === 'diagnostic';
   const strict = diag || mode === 'check';
   const hints = 'hints' in ex ? ex.hints : [];
+  // The ladder and AI hints share one budget (settings.learning.maxHints) and both lower the solution's weight.
+  const hintCount = hintsShown + aiHints;
+  const hintLimit = hintCount >= L.maxHints;
   const hintsAllowed = !strict && L.hintMode !== 'off' && (L.hintMode === 'on-request' || fails >= L.hintAfterFails);
+  const aiHintKinds: Exercise['kind'][] = ['code', 'fix', 'parsons', 'predict'];
+  const aiHintOk = !!aiReady && hintsAllowed && aiHintKinds.includes(ex.kind);
+  const aiContext = strict ? false : { prompt: ex.prompt, reference: referenceOf(ex), lang: 'lang' in ex ? ex.lang : undefined } as const;
   const revealAllowed = !strict && (L.hintMode !== 'off' || fails >= 3);
 
   useEffect(() => {
@@ -77,7 +96,7 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
 
   const finish = (o: Omit<ExerciseOutcome, 'ms' | 'hints' | 'confidence'> & { hints?: number }) => {
     if (outcome) return;
-    const full: ExerciseOutcome = { hints: hintsShown, ...o, confidence, ms: Date.now() - start.current };
+    const full: ExerciseOutcome = { hints: hintCount, ...o, confidence, ms: Date.now() - start.current };
     if (!full.correct && !full.mistake && firstMistake.current) full.mistake = firstMistake.current;
     setOutcome(full);
     onDone(full);
@@ -99,13 +118,18 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
       {hints.slice(0, hintsShown).map((h, i) => (
         <div key={i} className="hint"><strong className="small">Подсказка {i + 1}/{hints.length}: </strong><Inline text={h} /></div>
       ))}
-      {hintsAllowed && hintsShown < hints.length && (
+      {hintsAllowed && hintsShown < hints.length && !hintLimit && (
         <button className="btn sm ghost" onClick={() => setHintsShown((n) => n + 1)} data-testid="hint-btn">
           💡 {hintsShown === 0 ? 'Подсказка' : 'Следующая подсказка'} <span className="tiny muted">(снижает вес решения)</span>
         </button>
       )}
     </div>
   );
+
+  const hintLimitNote = !outcome && hintsAllowed && hintLimit && (hints.length > hintsShown || aiHintOk) && (
+    <div className="tiny muted" data-testid="hint-limit">Лимит подсказок ({L.maxHints}) исчерпан — его можно изменить в настройках обучения.</div>
+  );
+  const hintCounter = !outcome && hintCount > 0 && <div className="tiny muted" data-testid="hint-count" aria-live="polite">Использовано подсказок: {hintCount} из {L.maxHints}</div>;
 
   const body = (() => {
     switch (ex.kind) {
@@ -114,20 +138,20 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
       case 'code':
       case 'fix': return (
         <CodeTask
-          ex={ex} done={!!outcome} layout={diag ? 'stacked' : layout}
+          ex={ex} done={!!outcome} layout={diag ? 'stacked' : layout} ai={aiContext}
           onFail={(err, failed) => {
             setFails((f) => f + 1);
             firstMistake.current ??= { ...categorize(err, failed, ex.kind === 'fix' ? ex.bugType : undefined), note: err ? `${err.type}: ${err.message}`.slice(0, 160) : failed?.hidden ? `Скрытый тест: ${failed.label}` : `Неверный результат${failed?.expr ? ` для ${failed.expr}` : ''}` };
             // Diagnostic/check items allow one retry (e.g. a typo) before counting as incorrect.
             if (strict && fails >= 1) finish({ correct: false, revealed: false });
           }}
-          onPass={(attempts) => finish({ correct: true, revealed: false, hints: hintsShown + (attempts > 3 ? 1 : 0) })}
+          onPass={(attempts) => finish({ correct: true, revealed: false, hints: hintCount + (attempts > 3 ? 1 : 0) })}
         />
       );
       case 'parsons': return <Parsons ex={ex} done={!!outcome} onAnswer={(correct) => {
         if (!correct) { setFails((f) => f + 1); firstMistake.current ??= { category: 'logic', note: 'Неверный порядок строк' }; }
         // A retry that succeeds counts like a hinted success; three failures end the item.
-        if (correct || strict || fails >= 2) finish({ correct, revealed: false, hints: hintsShown + (fails > 0 ? 1 : 0) });
+        if (correct || strict || fails >= 2) finish({ correct, revealed: false, hints: hintCount + (fails > 0 ? 1 : 0) });
       }} />;
       case 'explain': return <Explain ex={ex} done={!!outcome} onAnswer={(correct) => finish({ correct, revealed: false })} />;
     }
@@ -147,6 +171,15 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
         {body}
         <div className="stack tight" style={{ marginTop: 12 }}>
           {hintUI}
+          {aiHintOk && !outcome && (
+            <AiHint
+              prompt={ex.prompt} lang={'lang' in ex ? ex.lang : undefined} reference={referenceOf(ex) ? [referenceOf(ex)!] : undefined}
+              code={ex.kind === 'code' ? draft ?? ex.starter : ex.kind === 'fix' ? draft ?? ex.buggy : ex.kind === 'predict' ? ex.code : undefined}
+              used={hintCount} shownHints={hints.slice(0, hintsShown)} blocked={hintLimit} onUsed={() => setAiHints((n) => n + 1)}
+            />
+          )}
+          {hintCounter}
+          {hintLimitNote}
           {!outcome && (
             <div className="row tight">
               {diag && <button className="btn ghost" data-testid="dont-know" onClick={() => finish({ correct: false, revealed: false, dontKnow: true })}>🤷 Не знаю</button>}
@@ -261,8 +294,8 @@ function Predict({ ex, done, onAnswer }: { ex: Extract<Exercise, { kind: 'predic
   );
 }
 
-function CodeTask({ ex, done, layout, onFail, onPass }: {
-  ex: Extract<Exercise, { kind: 'code' | 'fix' }>; done: boolean; layout: 'side' | 'stacked';
+function CodeTask({ ex, done, layout, ai, onFail, onPass }: {
+  ex: Extract<Exercise, { kind: 'code' | 'fix' }>; done: boolean; layout: 'side' | 'stacked'; ai: false | { prompt: string; reference?: string; lang?: string };
   onFail: (err: RunError | undefined, failed: TestResult | undefined) => void; onPass: (attempts: number) => void;
 }) {
   const draftKey = ex.id;
@@ -332,10 +365,10 @@ function CodeTask({ ex, done, layout, onFail, onPass }: {
             {out.error && <div className="err">{out.error.type}: {out.error.message}</div>}
           </div>
         )}
-        {out?.error && !results && <ErrorExplain error={out.error} lang={ex.lang} code={code} />}
+        {out?.error && !results && <ErrorExplain error={out.error} lang={ex.lang} code={code} ai={ai} />}
         {(results || testError) && (
           <div className="stack tight" aria-live="polite">
-            {testError && <ErrorExplain error={testError} lang={ex.lang} code={code} />}
+            {testError && <ErrorExplain error={testError} lang={ex.lang} code={code} ai={ai} />}
             {results && results.length > 0 && (
               <div className="tests" data-testid="tests">
                 {results.map((r, i) => (
@@ -351,7 +384,7 @@ function CodeTask({ ex, done, layout, onFail, onPass }: {
                 ))}
               </div>
             )}
-            {firstFail && !testError && <WrongResultExplain result={firstFail} lang={ex.lang} code={code} />}
+            {firstFail && !testError && <WrongResultExplain result={firstFail} lang={ex.lang} code={code} ai={ai} />}
           </div>
         )}
       </div>
