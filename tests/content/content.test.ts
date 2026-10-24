@@ -4,7 +4,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { ROUTES, ALL_SKILLS, ALL_EXERCISES } from '../../src/content';
 import type { Exercise, Route, Skill, TestCase } from '../../src/core/types';
 import { runJs, testJs } from '../../src/runner/jsHarness';
-import { runSql, testSql } from '../../src/runner/sqlHarness';
+import { runSql } from '../../src/runner/sqlHarness';
+import { validateExercise } from '../helpers/validateExercise';
 import { getPython, getSql, pyRun, pyTest } from '../helpers/runtimes';
 
 const norm = (s: string) => s.replace(/\r\n/g, '\n').split('\n').map((l) => l.trimEnd()).join('\n').replace(/\n+$/, '');
@@ -86,66 +87,7 @@ for (const route of ROUTES as Route[]) {
         });
         for (const e of exs as Exercise[]) {
           it(`${e.id} (${e.kind})`, async () => {
-            expect(e.prompt.trim().length).toBeGreaterThan(5);
-            expect(e.explanation.trim().length).toBeGreaterThan(5);
-            const mids = new Set(skill.misconceptions.map((m) => m.id));
-            switch (e.kind) {
-              case 'mcq': {
-                expect(e.options.length).toBeGreaterThanOrEqual(3);
-                expect(e.options.filter((o) => o.correct).length).toBe(1);
-                for (const o of e.options) {
-                  expect(o.why.trim().length).toBeGreaterThan(3);
-                  if (o.misconception) expect(mids.has(o.misconception), o.misconception).toBe(true);
-                }
-                expect(new Set(e.options.map((o) => o.text)).size).toBe(e.options.length);
-                break;
-              }
-              case 'predict': {
-                const r = await run(e.lang, e.code);
-                expect(r.error, r.error?.message).toBeNull();
-                expect(norm(r.stdout)).toBe(norm(e.answer));
-                break;
-              }
-              case 'code':
-              case 'fix': {
-                expect(e.hints.length).toBeGreaterThanOrEqual(2);
-                const attempt = e.kind === 'code' ? e.starter : e.buggy;
-                if (e.lang === 'sql') {
-                  const SQL = await getSql();
-                  const sol = runSql(SQL, e.setup, e.solution + (e.check ? `;\n${e.check}` : ''));
-                  expect(sol.error, sol.error?.message).toBeNull();
-                  expect(sol.tables.at(-1)?.rows.length ?? 0, 'solution returns rows').toBeGreaterThan(0);
-                  expect(e.hiddenSetup, 'hiddenSetup').toBeTruthy();
-                  const ok = testSql(SQL, e, e.solution);
-                  expect(failing(ok)).toEqual([]);
-                  const bad = testSql(SQL, e, attempt);
-                  expect(bad.every((r) => r.pass), 'starter/buggy must fail').toBe(false);
-                  break;
-                }
-                const tests = e.tests ?? [];
-                expect(tests.length).toBeGreaterThanOrEqual(3);
-                const hidden = tests.filter((t) => t.hidden);
-                expect(hidden.length, 'hidden tests').toBeGreaterThanOrEqual(1);
-                for (const t of hidden) expect(t.label, 'hidden test label').toBeTruthy();
-                const ok = await test(e.lang, e.solution, tests);
-                expect(failing(ok)).toEqual([]);
-                const bad = await test(e.lang, attempt, tests);
-                expect(bad.every((r) => r.pass), 'starter/buggy must fail').toBe(false);
-                break;
-              }
-              case 'parsons': {
-                expect(e.lines.length).toBeGreaterThanOrEqual(3);
-                for (const d of e.distractors ?? []) expect(e.lines).not.toContain(d);
-                const code = e.lines.join('\n');
-                if (e.tests?.length) expect(failing(await test(e.lang, code, e.tests))).toEqual([]);
-                else expect((await run(e.lang, code)).error).toBeNull();
-                break;
-              }
-              case 'explain':
-                expect(e.keyPoints.length).toBeGreaterThanOrEqual(2);
-                expect(e.modelAnswer.trim().length).toBeGreaterThan(20);
-                break;
-            }
+            expect(await validateExercise(e, skill)).toEqual([]);
           });
         }
       });

@@ -11,6 +11,11 @@ import { go, href } from '../router';
 import { ProgressRing, StackBar } from '../components/ProgressRing';
 import { Constellation } from '../components/Constellation';
 import { motionAllowed } from '../theme';
+import { dailyStatus, DAILY_SIZE } from '../../core/daily';
+import { countBugCandidates } from '../../core/mutate';
+import { LauncherTiles, type LauncherTile } from '../components/LauncherTiles';
+import { RouteOrbits } from '../components/LauncherOrbit';
+import { TipCard } from '../components/LauncherTip';
 
 function greeting(h: number) {
   return h < 5 ? 'Доброй ночи' : h < 12 ? 'Доброе утро' : h < 18 ? 'Добрый день' : 'Добрый вечер';
@@ -89,6 +94,27 @@ export function Home() {
   const statuses = ALL_SKILLS.map((x) => skillStatus(s.skills[x.id], now));
   const first = plan[0];
   const fv = first && activityView(first);
+  const animated = motionAllowed(s.settings.appearance.motion);
+  const daily = dailyStatus(s, now);
+  const bugs = countBugCandidates(s, ALL_EXERCISES, ALL_SKILLS);
+  const projectsDone = ALL_PROJECTS.filter((p) => s.projects[p.id]?.completedAt).length;
+  const activeTitle = active ? ROUTE_BY_ID.get(active)!.title : undefined;
+  const planMin = plan.reduce((n, a) => n + a.minutes, 0);
+  const tiles: LauncherTile[] = [
+    { id: 'continue', icon: '▶️', title: 'Продолжить', color: 'var(--accent)', link: fv?.link ?? (active ? `/route/${active}` : '/routes'),
+      stat: fv ? `${plan.length} в плане · ~${planMin} мин` : active ? 'План выполнен' : 'Выберите маршрут', sub: fv ? fv.title : activeTitle },
+    { id: 'daily', icon: '🎯', title: 'Вызов дня', color: '#f59e0b', link: '/daily', done: daily.done,
+      stat: daily.done ? `Выполнено · ${daily.correct}/${daily.total} верно` : daily.started ? `${daily.answered}/${DAILY_SIZE} · продолжить` : `${DAILY_SIZE} задания · 0/${DAILY_SIZE}`, sub: 'Интерливинг и память' },
+    { id: 'bughunt', icon: '🐞', title: 'Охота на баги', color: '#ef4444', link: '/bughunt',
+      stat: `${bugs} ${plural(bugs, 'задание', 'задания', 'заданий')} для охоты`, sub: 'Найди ошибку в готовом коде' },
+    { id: 'review', icon: '🔁', title: 'Повторение', color: '#10b981', link: '/review', badge: reviews.length,
+      stat: reviews.length ? `${reviews.length} ${plural(reviews.length, 'тема', 'темы', 'тем')} к повторению` : 'Пока нечего повторять', sub: 'Интервалы подбираются сами' },
+    { id: 'diag', icon: '🩺', title: 'Умная диагностика', color: '#8b5cf6', link: active ? `/diag/${active}` : '/routes',
+      stat: active ? (s.routes[active]?.diagnosticAt ? 'Пройдена · можно повторить' : '8 минут · узнать уровень') : 'Сначала выберите маршрут', sub: activeTitle },
+    { id: 'sandbox', icon: '🧪', title: 'Песочница', color: '#06b6d4', link: '/playground', stat: 'Python · JS · SQL', sub: 'Запуск кода и визуализатор' },
+    { id: 'projects', icon: '🛠️', title: 'Проекты', color: '#ec4899', link: '/projects',
+      stat: `${projectsDone} из ${ALL_PROJECTS.length} завершено`, sub: 'Пошаговые мини-проекты' },
+  ];
 
   const widgets: Record<WidgetId, ReactNode> = {
     continue: null,
@@ -218,6 +244,11 @@ export function Home() {
             <span className="chip">🎯 {GOAL_INFO[active ? s.routes[active]?.goal ?? s.settings.learning.goal : s.settings.learning.goal].title}</span>
           </div>
         </div>
+      </div>
+      <LauncherTiles tiles={tiles} animated={animated} />
+      <div className="launcher-split">
+        <RouteOrbits animated={animated} />
+        <TipCard />
       </div>
       <div className="grid cols-2">{order}</div>
     </div>
