@@ -9,6 +9,8 @@ import { ALL_SKILLS, EXERCISE_BY_ID, SKILL_BY_ID } from '../content';
 
 export interface AnswerInput {
   ex: string;
+  /** Skill for synthetic exercises (e.g. bug-hunt mutants) that are not in the content index. */
+  skill?: string;
   kind: ExerciseKind;
   correct: boolean;
   hints: number;
@@ -104,14 +106,18 @@ export const useStore = create<Store>((set, get) => ({
     });
   },
   recordAnswer(a) {
-    const ex = EXERCISE_BY_ID.get(a.ex);
-    if (!ex) return;
+    const known = EXERCISE_BY_ID.get(a.ex);
+    const skillId = known?.skill ?? (a.skill && SKILL_BY_ID.has(a.skill) ? a.skill : undefined);
+    if (!skillId) return;
+    // Synthetic ids look like `${exercise.id}~m3`; evidence and mistakes point at the original exercise.
+    const exId = known ? a.ex : a.ex.replace(/~m\d+$/, '');
+    const ex = { skill: skillId };
     const now = Date.now();
     get().update((s) => {
       const L = s.settings.learning;
       const prev = s.skills[ex.skill] ?? newSkillState();
       const wasMastered = !!prev.masteredAt;
-      const next = applyEvidence(prev, { ex: a.ex, kind: a.kind, correct: a.correct, hints: a.hints, revealed: a.revealed, confidence: a.confidence, source: a.source, ms: a.ms }, { now, masteryThreshold: L.masteryThreshold, retention: L.targetRetention });
+      const next = applyEvidence(prev, { ex: exId, kind: a.kind, correct: a.correct, hints: a.hints, revealed: a.revealed, confidence: a.confidence, source: a.source, ms: a.ms }, { now, masteryThreshold: L.masteryThreshold, retention: L.targetRetention });
       const day = dayKey(now);
       const d = s.days[day] ?? { ms: 0, items: 0, correct: 0 };
       const cal = { ...s.calibration };
@@ -121,7 +127,7 @@ export const useStore = create<Store>((set, get) => ({
       }
       let mistakes = s.mistakes;
       if (!a.correct && a.mistake) {
-        mistakes = [...mistakes, { id: `${now}-${a.ex}`, t: now, ex: a.ex, skill: ex.skill, ...a.mistake }].slice(-300);
+        mistakes = [...mistakes, { id: `${now}-${a.ex}`, t: now, ex: exId, skill: ex.skill, ...a.mistake }].slice(-300);
       } else if (a.correct && a.hints === 0 && !a.revealed) {
         // An independent success on the same skill resolves open mistakes of that skill.
         mistakes = mistakes.map((m) => (m.skill === ex.skill && !m.resolvedAt && m.t < now ? { ...m, resolvedAt: now } : m));
@@ -131,7 +137,7 @@ export const useStore = create<Store>((set, get) => ({
         ...s,
         skills: { ...s.skills, [ex.skill]: next },
         days: { ...s.days, [day]: { ms: d.ms + Math.min(a.ms ?? 60_000, 10 * 60_000), items: d.items + 1, correct: d.correct + (a.correct ? 1 : 0) } },
-        seen: { ...s.seen, [a.ex]: { n: (s.seen[a.ex]?.n ?? 0) + 1, last: now, ok: a.correct } },
+        seen: known ? { ...s.seen, [a.ex]: { n: (s.seen[a.ex]?.n ?? 0) + 1, last: now, ok: a.correct } } : s.seen,
         calibration: cal,
         mistakes,
       };
