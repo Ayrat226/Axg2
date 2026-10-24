@@ -73,3 +73,14 @@ export async function solveCurrent(page: Page, { wrong = false } = {}) {
   }
   return e;
 }
+
+export async function editorText(page: Page, scope = page.locator('body')) {
+  return scope.locator('[data-testid="code-editor"]').first().evaluate((el) => (el as unknown as { cmView: { state: { doc: { toString(): string } } } }).cmView.state.doc.toString());
+}
+
+/** Bug-hunt items are synthetic (`<exercise>~mN`): the reference solution is the fix of the original exercise. */
+export async function originalOfMutant(page: Page) {
+  const id = (await page.getByTestId('exercise').getAttribute('data-ex-id'))!;
+  const orig = EXERCISE_BY_ID.get(id.replace(/~m\d+$/, ''))!;
+  return { id, orig: orig as Extract<typeof orig, { solution: string }> };
+}
