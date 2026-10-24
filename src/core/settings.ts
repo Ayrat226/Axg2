@@ -12,7 +12,10 @@ export const GOAL_INFO: Record<GoalMode, { title: string; icon: string; desc: st
 };
 
 export const THEMES = ['system', 'dark', 'light', 'midnight', 'paper', 'terminal', 'sakura', 'contrast'] as const;
-export const THEME_INFO: Record<(typeof THEMES)[number], string> = {
+/** Themes selectable in settings: the built-in ones plus the user's own palette. */
+export const ALL_THEMES = [...THEMES, 'custom'] as const;
+export type ThemeId = (typeof ALL_THEMES)[number];
+export const THEME_INFO: Record<ThemeId, string> = {
   system: 'Как в системе',
   dark: 'Тёмная',
   light: 'Светлая',
@@ -21,6 +24,7 @@ export const THEME_INFO: Record<(typeof THEMES)[number], string> = {
   terminal: 'Терминал',
   sakura: 'Сакура',
   contrast: 'Высокий контраст',
+  custom: 'Своя тема',
 };
 
 export const WIDGETS = ['continue', 'plan', 'routes', 'constellation', 'reviews', 'mistakes', 'metrics', 'week'] as const;
@@ -38,9 +42,19 @@ export const WIDGET_INFO: Record<WidgetId, string> = {
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
-export const settingsSchema = z.object({
+export const customThemeSchema = z.object({ bg: hex, surface: hex, text: hex, dim: hex, border: hex, code: hex });
+export type CustomTheme = z.infer<typeof customThemeSchema>;
+
+export const MAX_USER_PRESETS = 24;
+export const PRESET_SECTIONS = ['appearance', 'learning', 'feedback', 'editor', 'dashboard'] as const;
+export type PresetSection = (typeof PRESET_SECTIONS)[number];
+export const SECTION_TITLE: Record<PresetSection, string> = {
+  appearance: 'Внешний вид', learning: 'Обучение', feedback: 'Объяснения ошибок', editor: 'Редактор', dashboard: 'Главная',
+};
+
+const sectionShapes = {
   appearance: z.object({
-    theme: z.enum(THEMES),
+    theme: z.enum(ALL_THEMES),
     accent: hex,
     fontScale: z.number().min(0.8).max(1.5),
     uiFont: z.enum(['system', 'rounded', 'serif', 'readable']),
