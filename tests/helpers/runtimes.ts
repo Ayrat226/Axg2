@@ -1,6 +1,5 @@
 // Node-side runtimes for tests: the same Pyodide build, harness and sql.js engine the browser uses.
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { loadPyodide, type PyodideAPI } from 'pyodide';
 import initSqlJs, { type SqlJsStatic } from 'sql.js';
 import type { TestCase } from '../../src/core/types';
@@ -12,7 +11,7 @@ let sql: Promise<SqlJsStatic> | null = null;
 export function getPython() {
   py ??= (async () => {
     const p = await loadPyodide();
-    p.runPython(readFileSync(join(__dirname, '../../src/runner/harness.py'), 'utf8'));
+    p.runPython(readFileSync(new URL('../../src/runner/harness.py', import.meta.url), 'utf8'));
     return p;
   })();
   return py;
