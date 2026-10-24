@@ -1,0 +1,12 @@
+import initSqlJs from 'sql.js';
+const SQL = await initSqlJs();
+const db = new SQL.Database();
+const q = (s) => { try { console.log(s, '=>', JSON.stringify(db.exec(s).map(r=>r.values))); } catch(e){ console.log(s, 'ERR', e.message);} };
+q("select date('2024-01-31','+1 month')");
+q("select 'анна' like 'Анна', 'a' like 'A'");
+q("select 'да' where 3 not in (1,2,null)");
+q("create table t(n integer); insert into t values('abc'); select n, typeof(n) from t");
+q("select sum(status='x') from (select 'x' status union all select 'y')");
+q("select 1 where row_number() over (order by 1) = 1");
+q("select 'Анна' is not 'Москва', null is not 'Москва'");
+q("select 7/2, 7/2.0");
