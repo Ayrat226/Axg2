@@ -182,7 +182,7 @@ else:
       kind: 'code',
       difficulty: 1,
       lang: 'python',
-      prompt: 'Напишите функцию `grade(score)`: 90 и выше — `"A"`, от 75 до 89 — `"B"`, от 60 до 74 — `"C"`, ниже 60 — `"D"`.',
+      prompt: 'Напишите функцию `grade(score)` для целого балла `score`: 90 и выше — `"A"`, от 75 до 89 — `"B"`, от 60 до 74 — `"C"`, ниже 60 — `"D"`.',
       starter: py`def grade(score):
     pass
 `,
@@ -338,7 +338,7 @@ print(bool(items), bool(name), 0 or "default", "" or [] or None)`,
         'else:',
         '    print("Взрослый")',
       ],
-      distractors: ['elif age >= 18:', 'age = input()'],
+      distractors: ['elif age > 18:', 'age = input()'],
       tests: [
         { stdin: ['3'], stdout: 'Бесплатно' },
         { stdin: ['6'], stdout: 'Детский' },
