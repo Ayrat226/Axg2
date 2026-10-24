@@ -23,6 +23,8 @@ export async function onboard(page: Page, opts: { name?: string; route?: string 
   for (let i = 0; i < 4; i++) await page.getByTestId('onb-next').click();
   if (opts.route) await page.getByTestId(`onb-route-${opts.route}`).click();
   else await page.getByRole('button', { name: 'Осмотрюсь сам(а)' }).click();
+  // State is persisted with a short debounce.
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('learnlab:state') ?? '{}')?.profile?.onboarded === true);
 }
 
 /** Answer the visible exercise correctly using the content's reference answers. */

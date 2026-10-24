@@ -112,7 +112,7 @@ code, pre, kbd { font-family: var(--font-code); }
 
 /* ---------- sidebar ---------- */
 .sidebar {
-  position: relative; z-index: 2; height: 100%; width: 248px; display: flex; flex-direction: column; gap: 4px;
+  position: relative; z-index: 2; height: 100%; width: 264px; display: flex; flex-direction: column; gap: 4px;
   padding: 14px 10px; background: var(--surface); backdrop-filter: var(--glass); border-right: 1px solid var(--border);
   transition: width var(--dur) var(--ease); overflow: hidden auto;
 }
@@ -131,6 +131,7 @@ code, pre, kbd { font-family: var(--font-code); }
 .nav-item.active { color: var(--text); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .nav-item.active::before { content: ''; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 4px; border-radius: 4px; background: var(--accent); }
 .nav-icon { width: 24px; text-align: center; font-size: 1.1rem; flex: none; }
+.nav-label { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .nav-badge { margin-left: auto; background: var(--accent); color: #fff; border-radius: 99px; font-size: 0.72rem; padding: 1px 8px; font-weight: 700; }
 .sidebar.collapsed .nav-label, .sidebar.collapsed .nav-badge, .sidebar.collapsed .brand-name, .sidebar.collapsed .side-section { display: none; }
 .side-section { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); padding: 12px 12px 4px; opacity: 0.8; }
@@ -172,6 +173,7 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; font-weight: 600; text-decoration: none; color: var(--text);
   transition: transform var(--dur) var(--ease), background var(--dur), border-color var(--dur), box-shadow var(--dur); white-space: nowrap;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
 }
 .btn:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
 .btn:active { transform: translateY(1px) scale(0.99); }
@@ -199,7 +201,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 input[type='range'] { accent-color: var(--accent); width: 100%; }
 input[type='checkbox'], input[type='radio'] { accent-color: var(--accent); width: 18px; height: 18px; }
 label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 0.92rem; }
-label.field .hint { font-weight: 400; color: var(--text-dim); font-size: 0.82rem; }
+label.field .hint { font-weight: 400; color: var(--text-dim); font-size: 0.82rem; background: none; border: 0; padding: 0; animation: none; }
 .toggle { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; border-bottom: 1px dashed var(--border); cursor: pointer; }
 .toggle:last-child { border-bottom: 0; }
 .segmented { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; gap: 2px; flex-wrap: wrap; }

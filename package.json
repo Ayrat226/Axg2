@@ -11,7 +11,8 @@
     "typecheck": "tsc -p .",
     "test": "vitest run",
     "test:content": "vitest run tests/content",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "screenshots": "vite build && node scripts/screenshots.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",

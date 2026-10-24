@@ -56,12 +56,17 @@ export const RECALL_KINDS: ExerciseKind[] = ['code', 'fix', 'predict'];
 export const newSkillState = (p = 0.15): SkillState => ({ p, evidence: [], checkStage: 0 });
 
 /** How much an observation should move the estimate: hints, revealed solutions and guesses count less. */
-export function evidenceWeight(e: Pick<Evidence, 'kind' | 'correct' | 'hints' | 'revealed' | 'confidence'>): number {
+/** Answers to recognition items faster than one could read them are likely guesses (rapid-guessing detection). */
+export function isRapidGuess(e: Pick<Evidence, 'kind' | 'ms'>): boolean {
+  return e.ms !== undefined && ((e.kind === 'mcq' && e.ms < 2500) || (e.kind === 'parsons' && e.ms < 4000));
+}
+
+export function evidenceWeight(e: Pick<Evidence, 'kind' | 'correct' | 'hints' | 'revealed' | 'confidence' | 'ms'>): number {
   let w = 1;
   if (e.kind === 'explain') w *= 0.4; // self-assessed
   if (e.correct) {
     w *= Math.max(0.25, 1 - 0.25 * e.hints);
-    if (e.confidence === 'guess') w *= 0.5;
+    if (e.confidence === 'guess' || isRapidGuess(e)) w *= 0.5;
   }
   return w;
 }

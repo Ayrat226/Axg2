@@ -40,6 +40,11 @@ export function dueReviews(state: AppState, skills: Skill[], now: number): strin
     .map((s) => s.id);
 }
 
+/** Everything a review session would serve now: overdue delayed checks first, then due reviews. */
+export function dueAll(state: AppState, skills: Skill[], now: number): string[] {
+  return [...new Set([...dueChecks(state, skills, now), ...dueReviews(state, skills, now)])];
+}
+
 export function missingPrereqs(state: AppState, skill: Skill, all: Map<string, Skill>, now: number): Skill[] {
   return skill.prereqs.filter((p) => all.has(p) && !isDone(skillStatus(state.skills[p], now))).map((p) => all.get(p)!);
 }

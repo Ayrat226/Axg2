@@ -23,7 +23,9 @@ export function Lesson({ id }: { id: string }) {
   const skill = SKILL_BY_ID.get(id);
   const s = useApp((x) => x);
   const L = s.settings.learning;
-  const [depth, setDepth] = useState<Depth>(L.explanationDepth);
+  // Expertise reversal: learners who already know a topic get the brief version first.
+  const knownAlready = !!skill && ['probable', 'mastered', 'durable'].includes(skillStatus(s.skills[skill.id], Date.now()));
+  const [depth, setDepth] = useState<Depth>(knownAlready && L.explanationDepth !== 'deep' ? 'brief' : L.explanationDepth);
   const [shown, setShown] = useState(L.stepByStepExamples ? 1 : 99);
   const [prediction, setPrediction] = useState('');
   const [run, setRun] = useState<{ stdout: string; error: import('../../runner/types').RunError | null; tables?: SqlTable[] } | null>(null);
@@ -95,6 +97,7 @@ export function Lesson({ id }: { id: string }) {
             {(['brief', 'standard', 'deep'] as const).map((d) => <button key={d} aria-pressed={depth === d} onClick={() => setDepth(d)} data-testid={`depth-${d}`}>{d === 'brief' ? 'Кратко' : d === 'standard' ? 'Обычно' : 'Углублённо'}</button>)}
           </div>
         </div>
+        {knownAlready && depth === 'brief' && L.explanationDepth !== 'brief' && <div className="tiny muted">Показана краткая версия: тема вам, по-видимому, знакома. Полное объяснение — во вкладке «Обычно».</div>}
         <blockquote className="md" style={{ margin: 0 }}><strong>Зачем: </strong><Inline text={skill.lesson.why} /></blockquote>
         <Markdown text={content} />
         {L.showAnalogies && skill.lesson.analogy && (

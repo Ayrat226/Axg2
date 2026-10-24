@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { applyEvidence, newSkillState, type Confidence, type EvidenceSource } from '../core/model';
 import { initialState, dayKey, type AppState, type MistakeCategory, type ProjectState } from '../core/state';
 import { mergeSettings, normalizeSettings, PRESETS, DEFAULT_SETTINGS, type GoalMode, type SettingsPatch } from '../core/settings';
-import { loadState, saveState } from '../core/storage';
+import { loadState, saveState, validateState, STORAGE_KEY } from '../core/storage';
 import { answerQuestion, startDiagnostic, type DiagAnswer, type DiagLength, type SelfLevel } from '../core/diagnostic';
 import type { ExerciseKind } from '../core/types';
 import { ALL_SKILLS, EXERCISE_BY_ID, SKILL_BY_ID } from '../content';
@@ -84,6 +84,8 @@ export const useStore = create<Store>((set, get) => ({
   },
   setProfile(p) {
     get().update((s) => ({ ...s, profile: { ...s.profile, ...p } }));
+    // Ask the browser not to evict local progress under storage pressure (best effort).
+    if (p.onboarded && typeof navigator !== 'undefined') void navigator.storage?.persist?.().catch(() => false);
   },
   startRoute(route, goal) {
     get().update((s) => ({
@@ -191,10 +193,13 @@ export const useStore = create<Store>((set, get) => ({
   },
 }));
 
-// Persist: debounced writes plus an immediate flush when the page is hidden.
+// Persist: debounced writes plus an immediate flush when the page is hidden. Only pending changes are
+// written, and changes made in another tab are adopted, so two open tabs never overwrite each other.
 let timer: ReturnType<typeof setTimeout> | null = null;
+let applyingRemote = false;
 function flush() {
-  if (!storage) return;
+  if (!storage || !timer) return;
+  clearTimeout(timer);
   timer = null;
   const r = saveState(storage, useStore.getState().s);
   if (!r.ok && useStore.getState().saveError !== r.error) {
@@ -204,13 +209,26 @@ function flush() {
 }
 if (storage) {
   useStore.subscribe((st, prev) => {
-    if (st.s === prev.s) return;
+    if (st.s === prev.s || applyingRemote) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(flush, 300);
   });
   if (typeof window !== 'undefined') {
     window.addEventListener('pagehide', flush);
     document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flush());
+    window.addEventListener('storage', (e) => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      try {
+        const r = validateState(JSON.parse(e.newValue));
+        if (!r.ok) return;
+        applyingRemote = true;
+        useStore.setState({ s: r.state });
+      } catch {
+        /* ignore malformed writes from other tabs */
+      } finally {
+        applyingRemote = false;
+      }
+    });
   }
 }
 

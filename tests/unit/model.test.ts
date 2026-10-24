@@ -19,6 +19,11 @@ describe('BKT', () => {
     expect(evidenceWeight({ kind: 'code', correct: true, hints: 0, revealed: false, confidence: 'guess' })).toBe(0.5);
     expect(evidenceWeight({ kind: 'explain', correct: true, hints: 0, revealed: false })).toBeCloseTo(0.4);
   });
+  it('very fast correct answers to recognition items are treated as likely guesses', () => {
+    expect(evidenceWeight({ kind: 'mcq', correct: true, hints: 0, revealed: false, ms: 900 })).toBe(0.5);
+    expect(evidenceWeight({ kind: 'mcq', correct: true, hints: 0, revealed: false, ms: 9000 })).toBe(1);
+    expect(evidenceWeight({ kind: 'code', correct: true, hints: 0, revealed: false, ms: 900 })).toBe(1);
+  });
   it('revealed solutions count as incorrect', () => {
     const s = applyEvidence(newSkillState(0.5), ev('code', true, { revealed: true }), opts);
     expect(s.p).toBeLessThan(0.5);

@@ -2,7 +2,7 @@
 // at a time, so each answer changes what comes next.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ALL_EXERCISES, ALL_SKILLS, ROUTE_BY_ID, SKILL_BY_ID } from '../../content';
-import { dueChecks, dueReviews, pickExercise, type PickMode } from '../../core/planner';
+import { dueAll, pickExercise, type PickMode } from '../../core/planner';
 import { skillStatus, STATUS_INFO, type EvidenceSource } from '../../core/model';
 import type { Exercise } from '../../core/types';
 import { actions, useApp, useStore } from '../../state/store';
@@ -43,8 +43,7 @@ export function Session({ mode, skill, route }: { mode: SessionMode; skill?: str
     const now = Date.now();
     if (mode === 'review') {
       const skills = route ? ALL_SKILLS.filter((x) => x.route === route) : ALL_SKILLS;
-      const due = [...dueChecks(s, skills, now), ...dueReviews(s, skills, now)];
-      const list = [...new Set(due)];
+      const list = dueAll(s, skills, now);
       const ordered = L.interleave ? list.sort((a, b) => hash(a + now) - hash(b + now)) : list.sort((a, b) => a.localeCompare(b));
       return ordered.slice(0, L.sessionSize * 2);
     }
@@ -84,12 +83,15 @@ export function Session({ mode, skill, route }: { mode: SessionMode; skill?: str
   }, [done.length, finished, queue, limit, mode, skill]);
 
   const record = (ex: Exercise, o: ExerciseOutcome) => {
-    const now = Date.now();
-    const st = useStore.getState().s.skills[ex.skill];
-    const isCheck = mode === 'check' || (mode === 'review' && st?.checkDue !== undefined && st.checkDue <= now);
+    const isCheck = itemIsCheck(ex.skill);
     actions().recordAnswer({ ex: ex.id, kind: ex.kind, correct: o.correct, hints: o.hints, revealed: o.revealed, confidence: o.confidence, ms: o.ms, source: isCheck ? 'check' : SOURCE[mode], mistake: o.mistake });
   };
 
+  // Overdue delayed checks inside a review session are served strictly (no hints), like a standalone check.
+  const itemIsCheck = (skillId: string) => {
+    const due = initial.current.skills[skillId]?.checkDue;
+    return mode === 'check' || (mode === 'review' && due !== undefined && due <= startAt);
+  };
   const title = TITLES[mode];
   const sk = skill ? SKILL_BY_ID.get(skill) : undefined;
 
@@ -126,7 +128,7 @@ export function Session({ mode, skill, route }: { mode: SessionMode; skill?: str
       <ExercisePlayer
         key={`${current.id}-${done.length}`}
         ex={current}
-        mode={mode === 'mistakes' ? 'practice' : mode}
+        mode={mode === 'mistakes' ? 'practice' : itemIsCheck(current.skill) ? 'check' : mode}
         onDone={(o) => { setPending(o); record(current, o); }}
         onNext={() => { if (pending) { setDone((d) => [...d, { ex: current, o: pending }]); setPending(null); } }}
       />

@@ -96,9 +96,14 @@ test('spaced review and delayed check pick due items', async ({ page }) => {
     s.skills['js.basics'] = { p: 0.97, evidence: [], checkStage: 0, masteredAt: past - 8 * 86_400_000, checkDue: past };
     localStorage.setItem('learnlab:state', JSON.stringify(s));
   });
+  await page.reload();
+  await expect(page.locator('.nav-badge').first()).toHaveText('2');
   await page.goto('/#/review');
   await expect(page.getByTestId('session')).toBeVisible();
   await expect(page.getByText(/Задание 1 из 2/)).toBeVisible();
+  // The overdue delayed check must be served without hints.
+  const first = await page.getByTestId('exercise').getAttribute('data-ex-id');
+  if (first?.startsWith('js.basics')) await expect(page.getByText(/Отсроченная проверка/)).toBeVisible();
 });
 
 test('project: steps with regression checks', async ({ page }) => {

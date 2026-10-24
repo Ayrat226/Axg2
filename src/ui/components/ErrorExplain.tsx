@@ -1,5 +1,5 @@
 // Renders a personalised explanation of an error or a wrong result, following feedback settings.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { explainError, explainWrongResult, shape, type Explanation } from '../../core/feedback';
 import type { Lang } from '../../core/types';
 import type { RunError, TestResult } from '../../runner/types';
@@ -13,6 +13,7 @@ const CAT: Record<Explanation['category'], string> = {
 export function ExplanationView({ e, raw }: { e: Explanation; raw?: string }) {
   const fb = useApp((s) => s.settings.feedback);
   const [depth, setDepth] = useState(fb.depth);
+  useEffect(() => setDepth(fb.depth), [fb.depth]);
   const [showSteps, setShowSteps] = useState(false);
   const x = shape(e, { ...fb, depth }, e.title.length);
   return (

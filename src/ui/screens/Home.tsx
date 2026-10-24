@@ -1,7 +1,7 @@
 // Main menu / hub: greeting, "continue" hero with the explained recommendation, and customizable widgets.
 import { useMemo, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { ALL_SKILLS, ROUTES, ROUTE_BY_ID, SKILL_BY_ID, ALL_EXERCISES, ALL_PROJECTS } from '../../content';
-import { planDay, routeProgress, dueReviews, plural } from '../../core/planner';
+import { planDay, routeProgress, dueAll, plural } from '../../core/planner';
 import { dayKey } from '../../core/state';
 import { isIndependent, skillStatus } from '../../core/model';
 import { WIDGET_INFO, GOAL_INFO, type WidgetId } from '../../core/settings';
@@ -75,7 +75,7 @@ export function Home() {
   const active = s.profile.activeRoute && ROUTE_BY_ID.has(s.profile.activeRoute) ? s.profile.activeRoute : undefined;
   const content = useMemo(() => ({ skills: ALL_SKILLS, exercises: ALL_EXERCISES, projects: ALL_PROJECTS }), []);
   const plan = active ? planDay(s, active, content, now) : [];
-  const reviews = dueReviews(s, ALL_SKILLS, now);
+  const reviews = dueAll(s, ALL_SKILLS, now);
   const unresolved = s.mistakes.filter((m) => !m.resolvedAt);
   const week = Array.from({ length: 7 }, (_, i) => {
     const t = now - (6 - i) * 86_400_000;
@@ -210,7 +210,8 @@ export function Home() {
           </div>
         </div>
         <div className="card stack" style={{ alignItems: 'center', justifyContent: 'center' }}>
-          <ProgressRing value={weekGoal ? weekMin / weekGoal : 0} size={150} stroke={12} label={`${Math.round(weekMin)}`} sub={`мин за неделю из ${weekGoal}`} />
+          <ProgressRing value={weekGoal ? weekMin / weekGoal : 0} size={150} stroke={12} label={`${Math.round(weekMin)}`} sub="мин за неделю" />
+          <div className="small muted">цель недели — {weekGoal} мин (5 дней × {s.settings.learning.dailyMinutes})</div>
           <div className="row tight" style={{ justifyContent: 'center' }}>
             <span className="chip">🔁 {reviews.length} к повторению</span>
             <span className="chip">🩹 {unresolved.length} ошибок</span>

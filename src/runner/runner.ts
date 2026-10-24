@@ -11,7 +11,9 @@ const listeners = new Set<Listener>();
 export function onRuntimeStatus(l: Listener) {
   listeners.add(l);
   l({ ...statuses });
-  return () => listeners.delete(l);
+  return () => {
+    listeners.delete(l);
+  };
 }
 function setStatus(k: 'python' | 'js', s: RuntimeStatus) {
   statuses[k] = s;

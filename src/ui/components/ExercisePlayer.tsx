@@ -85,7 +85,7 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
 
   const confidenceUI = L.askConfidence && !outcome && ex.kind !== 'explain' && (
     <div className="row tight" role="group" aria-label="Уверенность в ответе">
-      <span className="small muted">Насколько вы уверены?</span>
+      <span className="small muted">Уверенность (до ответа):</span>
       <div className="segmented">
         {([['sure', 'Уверен(а)'], ['unsure', 'Сомневаюсь'], ['guess', 'Наугад']] as const).map(([k, l]) => (
           <button key={k} aria-pressed={confidence === k} onClick={() => setConfidence(confidence === k ? undefined : k)}>{l}</button>
@@ -143,9 +143,9 @@ export function ExercisePlayer({ ex, mode, onDone, onNext, nextLabel = 'Даль
           {mode === 'check' && <span className="chip warn">Отсроченная проверка — без подсказок</span>}
         </div>
         <div style={{ fontSize: '1.05rem' }}><Markdown text={ex.prompt} /></div>
+        {confidenceUI && <div style={{ margin: '4px 0 8px' }}>{confidenceUI}</div>}
         {body}
         <div className="stack tight" style={{ marginTop: 12 }}>
-          {confidenceUI}
           {hintUI}
           {!outcome && (
             <div className="row tight">
@@ -253,7 +253,7 @@ function Predict({ ex, done, onAnswer }: { ex: Extract<Exercise, { kind: 'predic
   return (
     <div className="stack tight">
       <CodeBlock code={ex.code} lang={ex.lang} lines />
-      <label className="field">Что выведет программа? <span className="hint">Каждая строка вывода — с новой строки.</span>
+      <label className="field">Ваш ответ <span className="hint">Каждая строка вывода — с новой строки.</span>
         <textarea value={val} onChange={(e) => setVal(e.target.value)} disabled={done} rows={3} className="mono" data-testid="predict-input" />
       </label>
       {!done && <div><button className="btn primary" disabled={!val.trim()} onClick={() => onAnswer(norm(val) === norm(ex.answer), val)} data-testid="check">Проверить</button></div>}

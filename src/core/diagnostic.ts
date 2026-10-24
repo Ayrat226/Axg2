@@ -15,6 +15,8 @@ export const SELF_LEVELS: { level: SelfLevel; title: string; desc: string }[] = 
   { level: 3, title: 'Опытно', desc: 'Использую в работе или учёбе' },
 ];
 
+/** Below this many answers the estimate is too fragile to stop (see docs/RESEARCH.md). */
+export const DIAG_MIN = 6;
 const UNCERTAIN_LO = 0.2;
 const UNCERTAIN_HI = 0.8;
 const PROPAGATION = 0.55;
@@ -71,7 +73,11 @@ export function skillScore(state: DiagState, g: SkillGraph, id: string): number 
 export function nextQuestion(state: DiagState, skills: Skill[], pool: Exercise[]): Exercise | null {
   if (state.finished || state.answers.length >= state.maxQuestions) return null;
   const g = buildGraph(skills);
-  const open = skills.filter((s) => state.p[s.id] > UNCERTAIN_LO && state.p[s.id] < UNCERTAIN_HI && candidates(state, pool, s.id).length);
+  let open = skills.filter((s) => state.p[s.id] > UNCERTAIN_LO && state.p[s.id] < UNCERTAIN_HI && candidates(state, pool, s.id).length);
+  if (!open.length && state.answers.length < DIAG_MIN) {
+    // Confirm the least certain remaining estimates instead of stopping on very little evidence.
+    open = skills.filter((s) => candidates(state, pool, s.id).length).sort((a, b) => Math.abs(state.p[a.id] - 0.5) - Math.abs(state.p[b.id] - 0.5)).slice(0, 3);
+  }
   if (!open.length) return null;
   const best = open.map((s) => ({ s, score: skillScore(state, g, s.id) })).sort((a, b) => b.score - a.score || a.s.tier - b.s.tier)[0].s;
   const items = candidates(state, pool, best.id);

@@ -7,3 +7,4 @@ playwright-report
 coverage
 .hoplite
 *.log
+screenshots

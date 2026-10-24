@@ -1,14 +1,14 @@
 import { NAV, SETTINGS_NAV } from '../nav';
 import { href, type Loc } from '../router';
 import { actions, useApp } from '../../state/store';
-import { dueReviews } from '../../core/planner';
+import { dueAll } from '../../core/planner';
 import { ALL_SKILLS, ROUTE_BY_ID } from '../../content';
 
 export function useBadges(): Record<string, number> {
   const s = useApp((x) => x);
   const now = Date.now();
   return {
-    review: dueReviews(s, ALL_SKILLS, now).length,
+    review: dueAll(s, ALL_SKILLS, now).length,
     mistakes: s.mistakes.filter((m) => !m.resolvedAt).length,
   };
 }
@@ -27,8 +27,8 @@ export function Sidebar({ loc, onPalette }: { loc: Loc; onPalette: () => void })
       </div>
       <button className="nav-item" onClick={onPalette} title="Команды и поиск (Ctrl+K)">
         <span className="nav-icon">⌘</span>
-        <span className="nav-label grow">Поиск и команды</span>
-        <kbd className="nav-label">Ctrl K</kbd>
+        <span className="nav-label grow">Поиск</span>
+        <kbd className="nav-label" style={{ flex: 'none' }}>Ctrl K</kbd>
       </button>
       <div className="side-section">Обучение</div>
       {NAV.map((n) => (

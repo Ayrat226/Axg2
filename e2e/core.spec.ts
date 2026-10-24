@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { onboard, solveCurrent, trackErrors } from './helpers';
+import { ALL_SKILLS, ROUTES } from '../src/content';
 
 test('onboarding → adaptive diagnostic → results → route plan', async ({ page }) => {
   const errors = trackErrors(page);
@@ -84,13 +85,58 @@ test('wrong answers: explanations, misconceptions and the mistakes journal', asy
   expect(errors).toEqual([]);
 });
 
-test('code task: failing hidden test is explained, hints ladder, then pass', async ({ page }) => {
+test('delayed check: wrong attempt is explained, no hints, then a correct retry is accepted', async ({ page }) => {
   const errors = trackErrors(page);
   await onboard(page);
-  await page.goto('/#/practice/py.variables?mode=check');
+  await page.goto('/#/practice/py.loops?mode=check');
   const ex = page.getByTestId('exercise');
   await expect(ex).toBeVisible();
   const kind = await ex.getAttribute('data-kind');
   expect(['code', 'fix', 'predict']).toContain(kind);
+  await expect(page.getByTestId('hint-btn')).toHaveCount(0);
+  if (kind === 'code' || kind === 'fix') {
+    await solveCurrent(page, { wrong: true });
+    await expect(page.getByTestId('tests').or(page.getByTestId('explanation')).first()).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId('explanation').first()).toBeVisible();
+    await solveCurrent(page);
+    await expect(page.getByTestId('result')).toHaveAttribute('data-correct', 'true', { timeout: 60_000 });
+  } else {
+    await solveCurrent(page);
+    await expect(page.getByTestId('result')).toHaveAttribute('data-correct', 'true');
+  }
+  expect(errors).toEqual([]);
+});
+
+test('every route: diagnostic starts with an adaptive question of a supported kind', async ({ page }) => {
+  const errors = trackErrors(page);
+  await onboard(page);
+  for (const r of ROUTES) {
+    await page.goto(`/#/diag/${r.id}`);
+    await page.getByTestId('diag-begin').click();
+    await expect(page.getByTestId('exercise')).toBeVisible();
+    expect(await page.getByTestId('exercise').getAttribute('data-kind')).not.toBe('explain');
+    await page.getByRole('button', { name: 'Отменить диагностику' }).or(page.getByTestId('diag-end')).first().click();
+    await page.getByRole('button', { name: 'Отменить диагностику' }).click();
+  }
+  expect(errors).toEqual([]);
+});
+
+test('smoke: every lesson and every screen renders without errors; buttons have accessible names', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = trackErrors(page);
+  await onboard(page);
+  for (const sk of ALL_SKILLS) {
+    await page.goto(`/#/skill/${sk.id}`);
+    await expect(page.getByRole('heading', { name: sk.title, exact: true })).toBeVisible();
+    for (const d of ['brief', 'deep'] as const) await page.getByTestId(`depth-${d}`).click();
+  }
+  const screens = ['/', '/routes', ...ROUTES.map((r) => `/route/${r.id}`), '/map', '/review', '/mistakes', '/projects', ...ROUTES.flatMap((r) => r.projects.map((p) => `/project/${p.id}`)), '/playground', '/progress',
+    ...['profiles', 'appearance', 'learning', 'feedback', 'editor', 'home', 'data', 'about'].map((t) => `/settings/${t}`)];
+  for (const path of screens) {
+    await page.goto(`/#${path}`);
+    await page.waitForTimeout(150);
+    const unnamed = await page.locator('button:visible').evaluateAll((els) => els.filter((b) => !(b.getAttribute('aria-label') || b.textContent?.trim() || b.getAttribute('title'))).length);
+    expect(unnamed, `unnamed buttons on ${path}`).toBe(0);
+  }
   expect(errors).toEqual([]);
 });

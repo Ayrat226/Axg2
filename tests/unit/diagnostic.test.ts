@@ -28,6 +28,10 @@ describe('adaptive diagnostic', () => {
     expect(st.answers.length).toBeLessThan(st.maxQuestions);
     expect(res.start).toBeNull();
   });
+  it('never stops before the minimum number of questions while items remain', () => {
+    const { st } = simulate(new Set(CHAIN.map((s) => s.id)), 3);
+    expect(st.answers.length).toBeGreaterThanOrEqual(Math.min(6, POOL.filter((e) => e.diag).length));
+  });
   it('a novice gets gaps and the start point is the root', () => {
     const { res } = simulate(new Set(), 1);
     expect(res.skills.filter((r) => r.verdict === 'gap').length).toBeGreaterThanOrEqual(4);
