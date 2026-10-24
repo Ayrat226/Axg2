@@ -1,5 +1,12 @@
 import { buildRoute } from '../../core/types';
 import { variables } from './variables';
+import { types } from './types';
+import { strings } from './strings';
+import { conditions } from './conditions';
+import { loops } from './loops';
+import { lists } from './lists';
+import { dicts } from './dicts';
+import { functions } from './functions';
 
 export const pythonRoute = buildRoute(
   {
@@ -12,5 +19,5 @@ export const pythonRoute = buildRoute(
     color: '#4f8cff',
     outcomes: ['Пишу и отлаживаю программы на Python', 'Читаю трейсбеки', 'Использую коллекции и функции'],
   },
-  [variables],
+  [variables, types, strings, conditions, loops, lists, dicts, functions],
 );
