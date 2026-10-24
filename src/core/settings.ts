@@ -12,7 +12,10 @@ export const GOAL_INFO: Record<GoalMode, { title: string; icon: string; desc: st
 };
 
 export const THEMES = ['system', 'dark', 'light', 'midnight', 'paper', 'terminal', 'sakura', 'contrast'] as const;
-export const THEME_INFO: Record<(typeof THEMES)[number], string> = {
+/** Themes selectable in settings: the built-in ones plus the user's own palette. */
+export const ALL_THEMES = [...THEMES, 'custom'] as const;
+export type ThemeId = (typeof ALL_THEMES)[number];
+export const THEME_INFO: Record<ThemeId, string> = {
   system: 'Как в системе',
   dark: 'Тёмная',
   light: 'Светлая',
@@ -21,6 +24,7 @@ export const THEME_INFO: Record<(typeof THEMES)[number], string> = {
   terminal: 'Терминал',
   sakura: 'Сакура',
   contrast: 'Высокий контраст',
+  custom: 'Своя тема',
 };
 
 export const WIDGETS = ['continue', 'plan', 'routes', 'constellation', 'reviews', 'mistakes', 'metrics', 'week'] as const;
@@ -38,9 +42,27 @@ export const WIDGET_INFO: Record<WidgetId, string> = {
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
+export const customThemeSchema = z.object({ bg: hex, surface: hex, text: hex, dim: hex, border: hex, code: hex });
+export type CustomTheme = z.infer<typeof customThemeSchema>;
+
+export const MAX_USER_PRESETS = 24;
+export const userPresetSchema = z.object({
+  id: z.string().min(1).max(40),
+  title: z.string().trim().min(1).max(40),
+  icon: z.string().min(1).max(8),
+  /** Snapshot of the chosen sections (never includes userPresets). */
+  settings: z.record(z.string(), z.record(z.string(), z.unknown())),
+});
+export type UserPreset = z.infer<typeof userPresetSchema>;
+export const PRESET_SECTIONS = ['appearance', 'learning', 'feedback', 'editor', 'dashboard'] as const;
+export type PresetSection = (typeof PRESET_SECTIONS)[number];
+export const SECTION_TITLE: Record<PresetSection, string> = {
+  appearance: 'Внешний вид', learning: 'Обучение', feedback: 'Объяснения ошибок', editor: 'Редактор', dashboard: 'Главная',
+};
+
 export const settingsSchema = z.object({
   appearance: z.object({
-    theme: z.enum(THEMES),
+    theme: z.enum(ALL_THEMES),
     accent: hex,
     fontScale: z.number().min(0.8).max(1.5),
     uiFont: z.enum(['system', 'rounded', 'serif', 'readable']),
@@ -52,6 +74,10 @@ export const settingsSchema = z.object({
     sidebar: z.enum(['expanded', 'collapsed']),
     editorLayout: z.enum(['side', 'stacked']),
     lineHeight: z.number().min(1.3).max(2),
+    customTheme: customThemeSchema,
+    glass: z.enum(['theme', 'off', 'soft', 'strong']),
+    cornerScale: z.number().min(0.5).max(1.6),
+    cardShadow: z.boolean(),
   }),
   learning: z.object({
     goal: z.enum(GOALS),
@@ -71,6 +97,8 @@ export const settingsSchema = z.object({
     diagnosticLength: z.enum(['short', 'standard', 'thorough']),
     celebrate: z.enum(['full', 'subtle', 'off']),
     showTimer: z.boolean(),
+    analogyStyle: z.enum(['everyday', 'engineering', 'visual', 'none']),
+    maxHints: z.number().int().min(1).max(5),
   }),
   feedback: z.object({
     depth: z.enum(['brief', 'standard', 'deep']),
@@ -78,6 +106,8 @@ export const settingsSchema = z.object({
     showTraceback: z.boolean(),
     showTerms: z.boolean(),
     autoExplain: z.boolean(),
+    termsStyle: z.enum(['ru', 'ru+en', 'en-first']),
+    socraticDelay: z.boolean(),
   }),
   editor: z.object({
     fontSize: z.number().int().min(11).max(24),
@@ -92,9 +122,12 @@ export const settingsSchema = z.object({
   dashboard: z.object({
     widgets: z.array(z.object({ id: z.enum(WIDGETS), visible: z.boolean() })),
   }),
+  userPresets: z.array(userPresetSchema).max(MAX_USER_PRESETS),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
+
+export const DEFAULT_CUSTOM_THEME: CustomTheme = { bg: '#0f1424', surface: '#1a2138', text: '#e8eaf3', dim: '#a3abc4', border: '#3a4466', code: '#0b1020' };
 
 export const DEFAULT_SETTINGS: Settings = {
   appearance: {
@@ -110,6 +143,10 @@ export const DEFAULT_SETTINGS: Settings = {
     sidebar: 'expanded',
     editorLayout: 'side',
     lineHeight: 1.6,
+    customTheme: { ...DEFAULT_CUSTOM_THEME },
+    glass: 'theme',
+    cornerScale: 1,
+    cardShadow: true,
   },
   learning: {
     goal: 'systematic',
@@ -129,6 +166,8 @@ export const DEFAULT_SETTINGS: Settings = {
     diagnosticLength: 'standard',
     celebrate: 'subtle',
     showTimer: false,
+    analogyStyle: 'everyday',
+    maxHints: 5,
   },
   feedback: {
     depth: 'standard',
@@ -136,6 +175,8 @@ export const DEFAULT_SETTINGS: Settings = {
     showTraceback: true,
     showTerms: true,
     autoExplain: true,
+    termsStyle: 'ru+en',
+    socraticDelay: false,
   },
   editor: {
     fontSize: 14,
@@ -148,6 +189,7 @@ export const DEFAULT_SETTINGS: Settings = {
     timeoutSec: 6,
   },
   dashboard: { widgets: WIDGETS.map((id) => ({ id, visible: true })) },
+  userPresets: [],
 };
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? (T[K] extends unknown[] ? T[K] : DeepPartial<T[K]>) : T[K] };
