@@ -1,8 +1,8 @@
 // Settings: every control writes immediately and the whole app (and the previews here) react live.
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { version } from '../../../package.json';
 import { exportState, parseImport, STORAGE_KEY, type ImportSummary } from '../../core/storage';
-import { GOALS, GOAL_INFO, PRESETS, THEMES, THEME_INFO, WIDGETS, WIDGET_INFO, DEFAULT_SETTINGS, type Preset, type Settings, type SettingsPatch } from '../../core/settings';
+import { ALL_THEMES, GOALS, GOAL_INFO, PRESETS, THEME_INFO, analogyMode, WIDGETS, WIDGET_INFO, DEFAULT_SETTINGS, type Preset, type Settings, type SettingsPatch } from '../../core/settings';
 import { intervalDays } from '../../core/srs';
 import { dayKey, type AppState } from '../../core/state';
 import { actions, useApp, useStore } from '../../state/store';
@@ -12,6 +12,12 @@ import { CodeEditor } from '../components/CodeEditor';
 import { ErrorExplain } from '../components/ErrorExplain';
 import { Modal } from '../components/Modal';
 import { go } from '../router';
+import { UserProfiles } from '../components/UserProfiles';
+import { CustomThemeEditor } from '../components/CustomThemeEditor';
+import { AiSettings } from '../components/AiSettings';
+import { SettingsSearch } from '../components/SettingsSearch';
+import type { SettingEntry } from './settingsIndex';
+import { Section, SegSetting, SwitchSetting, RangeSetting, pct, onOff } from '../components/SettingControls';
 
 const TABS = [
   { id: 'profiles', label: 'Профили', icon: '🎭' },
@@ -19,6 +25,7 @@ const TABS = [
   { id: 'learning', label: 'Обучение', icon: '🎓' },
   { id: 'feedback', label: 'Объяснения ошибок', icon: '💬' },
   { id: 'editor', label: 'Редактор', icon: '⌨️' },
+  { id: 'ai', label: 'AI-помощник', icon: '🤖' },
   { id: 'home', label: 'Главная', icon: '🏠' },
   { id: 'data', label: 'Данные', icon: '💾' },
   { id: 'about', label: 'О приложении', icon: 'ℹ️' },
@@ -27,77 +34,25 @@ type TabId = (typeof TABS)[number]['id'];
 
 const up = (p: SettingsPatch) => actions().updateSettings(p);
 
-// ---------- building blocks ----------
-
-function Setting({ labelId, label, hint, children }: { labelId?: string; label: string; hint: string; children: ReactNode }) {
-  return (
-    <div className="row spread" style={{ padding: '10px 0', borderBottom: '1px dashed var(--border)', alignItems: 'flex-start' }}>
-      <div className="grow" style={{ minWidth: 220 }}>
-        <div id={labelId} style={{ fontWeight: 600 }}>{label}</div>
-        <div className="small muted">{hint}</div>
-      </div>
-      <div style={{ maxWidth: '100%' }}>{children}</div>
-    </div>
-  );
-}
-
-function SegSetting<T extends string | number>({ label, hint, value, options, onChange }: { label: string; hint: string; value: T; options: readonly (readonly [T, string])[]; onChange: (v: T) => void }) {
-  const id = useId();
-  return (
-    <Setting labelId={id} label={label} hint={hint}>
-      <div className="segmented" role="group" aria-labelledby={id}>
-        {options.map(([v, l]) => (
-          <button key={String(v)} aria-pressed={v === value} onClick={() => onChange(v)}>{l}</button>
-        ))}
-      </div>
-    </Setting>
-  );
-}
-
-function SwitchSetting({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
-  const id = useId();
-  const inputId = `${id}-in`;
-  return (
-    <label className="toggle" htmlFor={inputId}>
-      <span style={{ display: 'block' }}>
-        <span id={id} style={{ display: 'block', fontWeight: 600 }}>{label}</span>
-        <span className="small muted" style={{ display: 'block' }}>{hint}</span>
-      </span>
-      <input id={inputId} type="checkbox" role="switch" aria-labelledby={id} checked={checked} onChange={(e) => onChange(e.target.checked)} />
-    </label>
-  );
-}
-
-function RangeSetting({ label, hint, value, min, max, step, format, onChange, extra }: { label: string; hint: string; value: number; min: number; max: number; step: number; format: (v: number) => string; onChange: (v: number) => void; extra?: ReactNode }) {
-  const id = useId();
-  return (
-    <Setting labelId={id} label={label} hint={hint}>
-      <div style={{ width: 250, maxWidth: '100%' }}>
-        <input type="range" min={min} max={max} step={step} value={value} aria-labelledby={id} aria-valuetext={format(value)} onChange={(e) => onChange(Number(e.target.value))} />
-        <div className="row spread tiny muted"><span>{format(min)}</span><strong style={{ color: 'var(--text)', fontSize: '0.9rem' }}>{format(value)}</strong><span>{format(max)}</span></div>
-        {extra}
-      </div>
-    </Setting>
-  );
-}
-
-function Section({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
-  return (
-    <div className="card">
-      <div className="card-title">{title}{sub && <span className="sub">{sub}</span>}</div>
-      {children}
-    </div>
-  );
-}
-
-const pct = (v: number) => `${Math.round(v * 100)}%`;
-const onOff = (v: boolean) => (v ? 'включено' : 'выключено');
-
 // ---------- screen ----------
 
 export function SettingsScreen({ tab }: { tab?: string }) {
   const current: TabId = TABS.some((t) => t.id === tab) ? (tab as TabId) : 'profiles';
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [target, setTarget] = useState<SettingEntry | null>(null);
+
+  // Jump from a search result: open its tab, then scroll to the row and focus its control.
+  useEffect(() => {
+    if (!target || target.tab !== current) return;
+    const row = document.querySelector<HTMLElement>(`[data-setting="${CSS.escape(target.label)}"]`);
+    if (!row) { setTarget(null); return; }
+    row.scrollIntoView({ block: 'center', behavior: 'auto' });
+    (row.querySelector<HTMLElement>('[aria-pressed="true"], input, select, textarea, button') ?? row).focus({ preventScroll: true });
+    row.classList.add('flash');
+    const t = setTimeout(() => row.classList.remove('flash'), 2200);
+    setTarget(null);
+    return () => clearTimeout(t);
+  }, [target, current]);
 
   const onTabKey = (e: React.KeyboardEvent) => {
     const i = TABS.findIndex((t) => t.id === current);
@@ -118,6 +73,7 @@ export function SettingsScreen({ tab }: { tab?: string }) {
         <h1>Настройки</h1>
         <span className="muted">Приложение подстраивается под вас: изменения применяются сразу и сохраняются на этом устройстве.</span>
       </div>
+      <SettingsSearch onPick={(e) => { setTarget(e); go(`/settings/${e.tab}`); }} />
       <div className="tabs" role="tablist" aria-label="Разделы настроек" onKeyDown={onTabKey}>
         {TABS.map((t) => (
           <button
@@ -134,6 +90,7 @@ export function SettingsScreen({ tab }: { tab?: string }) {
         {current === 'learning' && <LearningTab />}
         {current === 'feedback' && <FeedbackTab />}
         {current === 'editor' && <EditorTab />}
+        {current === 'ai' && <AiSettings />}
         {current === 'home' && <HomeTab />}
         {current === 'data' && <DataTab />}
         {current === 'about' && <AboutTab />}
@@ -183,6 +140,7 @@ function ProfilesTab() {
           })}
         </div>
       </Section>
+      <UserProfiles />
       <Section title="Сброс настроек">
         <div className="row spread">
           <span className="small muted grow">Вернёт оформление, режим обучения, объяснения и редактор к значениям по умолчанию. Прогресс не затрагивается.</span>
@@ -195,7 +153,7 @@ function ProfilesTab() {
           onClose={() => setConfirm(false)}
           actions={<>
             <button className="btn ghost" onClick={() => setConfirm(false)}>Отмена</button>
-            <button className="btn danger" onClick={() => { actions().resetSettings(); setConfirm(false); actions().toast('Настройки сброшены', 'success'); }}>Сбросить</button>
+            <button className="btn danger" onClick={() => { const keep = settings.userPresets; actions().resetSettings(); actions().updateSettings({ userPresets: keep }); setConfirm(false); actions().toast('Настройки сброшены', 'success'); }}>Сбросить</button>
           </>}
         >
           <p style={{ margin: 0 }}>Все настройки вернутся к значениям по умолчанию. Ваш прогресс и имя сохранятся.</p>
@@ -207,7 +165,7 @@ function ProfilesTab() {
 
 // ---------- appearance ----------
 
-const THEME_COLORS: Record<(typeof THEMES)[number], [string, string, string]> = {
+const THEME_COLORS: Record<Exclude<(typeof ALL_THEMES)[number], 'custom'>, [string, string, string]> = {
   system: ['#0b0d15', '#f4f6fb', '#9aa1b8'],
   dark: ['#0b0d15', '#1b2033', '#e8eaf3'],
   light: ['#f4f6fb', '#ffffff', '#161a2a'],
@@ -225,18 +183,23 @@ function AppearanceTab() {
     <>
       <Section title="Тема">
         <div className="grid cols-4" role="group" aria-label="Тема оформления">
-          {THEMES.map((t) => (
+          {ALL_THEMES.map((t) => {
+            const colors = t === 'custom' ? [a.customTheme.bg, a.customTheme.surface, a.customTheme.text] : THEME_COLORS[t];
+            return (
             <button key={t} className="theme-tile" aria-pressed={a.theme === t} onClick={() => set({ theme: t })} aria-label={`Тема «${THEME_INFO[t]}»`}>
-              <span className="prev" style={{ background: THEME_COLORS[t][0], display: 'flex' }} aria-hidden="true">
-                <i style={{ background: THEME_COLORS[t][1], border: `1px solid ${THEME_COLORS[t][2]}55` }} />
-                <i style={{ background: THEME_COLORS[t][2] }} />
+              <span className="prev" style={{ background: colors[0], display: 'flex' }} aria-hidden="true">
+                <i style={{ background: colors[1], border: `1px solid ${colors[2]}55` }} />
+                <i style={{ background: colors[2] }} />
                 <i style={{ background: a.accent }} />
               </span>
               <span className="name" style={{ display: 'block' }}>{a.theme === t ? '✓ ' : ''}{THEME_INFO[t]}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
       </Section>
+
+      <CustomThemeEditor />
 
       <Section title="Акцентный цвет">
         <div className="row" role="group" aria-label="Акцентный цвет">
@@ -267,6 +230,12 @@ function AppearanceTab() {
         <SegSetting label="Фон меню" hint="Декоративный фон за интерфейсом; «Однотонный» — самый спокойный." value={a.background} onChange={(v) => set({ background: v })} options={[['aurora', 'Аврора'], ['constellation', 'Созвездие'], ['grid', 'Сетка'], ['plain', 'Однотонный']]} />
         <SegSetting label="Боковое меню" hint="Свёрнутое меню оставляет только значки." value={a.sidebar} onChange={(v) => set({ sidebar: v })} options={[['expanded', 'Развёрнуто'], ['collapsed', 'Свёрнуто']]} />
         <SegSetting label="Раскладка задач" hint="Редактор и условие рядом или друг под другом." value={a.editorLayout} onChange={(v) => set({ editorLayout: v })} options={[['side', 'Рядом'], ['stacked', 'Друг под другом']]} />
+      </Section>
+
+      <Section title="Эффекты интерфейса">
+        <RangeSetting label="Округлость углов" hint="Тонкая настройка поверх выбранной формы: от почти квадратных до очень круглых." value={a.cornerScale} min={0.5} max={1.6} step={0.1} format={pct} onChange={(v) => set({ cornerScale: v })} />
+        <SegSetting label="Размытие стекла" hint="Матовое стекло под карточками и меню. «Нет» экономит ресурсы слабых устройств." value={a.glass} onChange={(v) => set({ glass: v })} options={[['theme', 'По теме'], ['off', 'Нет'], ['soft', 'Слабое'], ['strong', 'Сильное']]} />
+        <SwitchSetting label="Тени карточек" hint="Выключите, чтобы интерфейс выглядел плоским." checked={a.cardShadow} onChange={(v) => set({ cardShadow: v })} />
       </Section>
 
       <Section title="Предпросмотр" sub="так выглядят текст, кнопки и код">
@@ -303,11 +272,16 @@ function LearningTab() {
 
       <Section title="Подача материала">
         <SegSetting label="Глубина объяснений" hint="Сколько текста и деталей в уроках и разборах." value={L.explanationDepth} onChange={(v) => set({ explanationDepth: v })} options={[['brief', 'Кратко'], ['standard', 'Обычно'], ['deep', 'Подробно']]} />
-        <SwitchSetting label="Аналогии" hint="Добавляет бытовые сравнения к новым понятиям." checked={L.showAnalogies} onChange={(v) => set({ showAnalogies: v })} />
+        <SegSetting
+          label="Стиль примеров и аналогий" hint="Как урок поясняет новое: бытовая аналогия, инженерный взгляд «под капотом», автоматическая визуализация выполнения или без аналогий."
+          value={analogyMode(L)} onChange={(v) => set({ analogyStyle: v, showAnalogies: v !== 'none' })}
+          options={[['everyday', 'Бытовые'], ['engineering', 'Инженерные'], ['visual', 'Визуально'], ['none', 'Без аналогий']]}
+        />
         <SwitchSetting label="Пошаговые разборы примеров" hint="Пример показывается по шагам, а не готовым блоком." checked={L.stepByStepExamples} onChange={(v) => set({ stepByStepExamples: v })} />
       </Section>
 
       <Section title="Подсказки и самопроверка">
+        <RangeSetting label="Максимум подсказок на задание" hint="Общий предел для подсказок лестницы и AI-подсказок: после него остаётся думать самому." value={L.maxHints} min={1} max={5} step={1} format={(v) => String(v)} onChange={(v) => set({ maxHints: v })} />
         <SegSetting label="Подсказки" hint="Когда доступны подсказки в задачах. Ответ с подсказкой весит меньше для оценки мастерства." value={L.hintMode} onChange={(v) => set({ hintMode: v })} options={[['on-request', 'По запросу'], ['after-fail', 'После ошибки'], ['off', 'Выключены']]} />
         {L.hintMode === 'after-fail' && (
           <RangeSetting label="Подсказка после ошибок" hint="Через сколько неверных попыток появится подсказка." value={L.hintAfterFails} min={1} max={5} step={1} format={(v) => String(v)} onChange={(v) => set({ hintAfterFails: v })} />
@@ -358,13 +332,17 @@ function FeedbackTab() {
         <SegSetting label="Тон" hint="Сократический — наводящие вопросы вместо готовых указаний." value={f.tone} onChange={(v) => set({ tone: v })} options={[['friendly', 'Дружелюбный'], ['neutral', 'Нейтральный'], ['socratic', 'Сократический']]} />
         <SwitchSetting label="Показывать оригинальное сообщение" hint={`Исходный текст ошибки интерпретатора под объяснением (${onOff(f.showTraceback)}).`} checked={f.showTraceback} onChange={(v) => set({ showTraceback: v })} />
         <SwitchSetting label="Показывать термины" hint="Русский термин и английский эквивалент — пригодится при чтении документации." checked={f.showTerms} onChange={(v) => set({ showTerms: v })} />
-        <SwitchSetting label="Объяснять автоматически" hint="Разбор появляется сразу после ошибки, без нажатия кнопки." checked={f.autoExplain} onChange={(v) => set({ autoExplain: v })} />
+        {f.showTerms && (
+          <SegSetting label="Язык терминов" hint="Как записывать термин: только по-русски, по-русски с английским в скобках или английский первым — для чтения документации." value={f.termsStyle} onChange={(v) => set({ termsStyle: v })} options={[['ru', 'Русский'], ['ru+en', 'Русский + English'], ['en-first', 'English первым']]} />
+        )}
+        <SwitchSetting label="Объяснять автоматически" hint="Разбор открывается сразу после ошибки. Выключено — показывается только заголовок и кнопка «Показать объяснение»." checked={f.autoExplain} onChange={(v) => set({ autoExplain: v })} />
+        <SwitchSetting label="Сначала вопрос, потом объяснение" hint="После ошибки вы видите наводящие вопросы, а объяснение открывается по кнопке — так вы успеваете подумать сами." checked={f.socraticDelay} onChange={(v) => set({ socraticDelay: v })} />
       </Section>
       <Section title="Предпросмотр" sub="пример ошибки в Python">
         <div className="stack tight">
           <CodeBlock code={SAMPLE_CODE} lang="python" lines highlightLine={2} />
           <div className="card flat">
-            <ErrorExplain key={f.depth} error={SAMPLE_ERROR} lang="python" code={SAMPLE_CODE} />
+            <ErrorExplain key={`${f.depth}-${f.autoExplain}-${f.socraticDelay}-${f.showTerms}-${f.termsStyle}`} error={SAMPLE_ERROR} lang="python" code={SAMPLE_CODE} ai={false} />
           </div>
         </div>
       </Section>
