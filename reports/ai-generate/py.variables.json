@@ -1,0 +1,49 @@
+[
+  {
+    "id": "py.variables.g2",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.variables.g3",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.variables.g1",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Третья подсказка фактически раскрывает решение: она прямо говорит использовать `{seats}` без прибавления единицы, то есть указывает точную правку стартового кода."
+    ]
+  },
+  {
+    "id": "py.variables.g4",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.variables.g5",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Подсказка 3 фактически выдаёт готовое решение: `distance = int(input())`, что для задания на исправление одной ошибки снимает необходимость самостоятельного поиска.",
+      "Подсказка 2 сформулирована неточно: в Python строку можно умножить на число, она просто повторится; проблема не в самой операции умножения, а в последующем сложении числа и строки."
+    ]
+  },
+  {
+    "id": "py.variables.g6",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  }
+]

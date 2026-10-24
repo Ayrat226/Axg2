@@ -11,6 +11,8 @@ import { Markdown, Inline } from '../components/Markdown';
 import { CodeBlock } from '../components/CodeBlock';
 import { ErrorExplain } from '../components/ErrorExplain';
 import { Visualizer } from '../components/Visualizer';
+import { AiExplainAgain } from '../components/AiExplainAgain';
+import { analogyMode } from '../../core/settings';
 import { href } from '../router';
 import { KIND_ICON, KIND_LABEL } from '../components/ExercisePlayer';
 import type { SqlTable } from '../../runner/types';
@@ -26,14 +28,18 @@ export function Lesson({ id }: { id: string }) {
   // Expertise reversal: learners who already know a topic get the brief version first.
   const knownAlready = !!skill && ['probable', 'mastered', 'durable'].includes(skillStatus(s.skills[skill.id], Date.now()));
   const [depth, setDepth] = useState<Depth>(knownAlready && L.explanationDepth !== 'deep' ? 'brief' : L.explanationDepth);
-  const [shown, setShown] = useState(L.stepByStepExamples ? 1 : 99);
+  const am = analogyMode(L);
+  // «Визуально»: the step-by-step visualiser opens by itself and the example steps are shown in full.
+  const visual = am === 'visual';
+  const [shown, setShown] = useState(L.stepByStepExamples && !visual ? 1 : 99);
   const [prediction, setPrediction] = useState('');
   const [run, setRun] = useState<{ stdout: string; error: import('../../runner/types').RunError | null; tables?: SqlTable[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [viz, setViz] = useState(false);
   const [ignoreReady, setIgnoreReady] = useState(false);
   useEffect(() => { if (skill) actions().markLesson(skill.id); }, [skill]);
-  useEffect(() => { setShown(L.stepByStepExamples ? 1 : 99); setRun(null); setViz(false); setPrediction(''); }, [id, L.stepByStepExamples]);
+  const exLang = skill?.lesson.example.lang;
+  useEffect(() => { setShown(L.stepByStepExamples && !visual ? 1 : 99); setRun(null); setViz(visual && exLang === 'python'); setPrediction(''); }, [id, L.stepByStepExamples, visual, exLang]);
   if (!skill) return <div className="page"><div className="card empty">Тема не найдена. <a href="#/routes">К маршрутам</a></div></div>;
   const route = ROUTE_BY_ID.get(skill.route)!;
   const now = Date.now();
@@ -100,16 +106,20 @@ export function Lesson({ id }: { id: string }) {
         {knownAlready && depth === 'brief' && L.explanationDepth !== 'brief' && <div className="tiny muted">Показана краткая версия: тема вам, по-видимому, знакома. Полное объяснение — во вкладке «Обычно».</div>}
         <blockquote className="md" style={{ margin: 0 }}><strong>Зачем: </strong><Inline text={skill.lesson.why} /></blockquote>
         <Markdown text={content} />
-        {L.showAnalogies && skill.lesson.analogy && (
-          <div className="card flat"><strong>🧠 Аналогия. </strong><Inline text={skill.lesson.analogy} /></div>
+        {am === 'engineering' && skill.lesson.deep && (
+          <div className="card flat" data-testid="analogy-engineering"><strong>⚙️ Инженерный взгляд. </strong><Markdown text={skill.lesson.deep.split(/\n\s*\n/)[0]} /></div>
+        )}
+        {(am === 'everyday' || am === 'visual' || (am === 'engineering' && !skill.lesson.deep)) && skill.lesson.analogy && (
+          <div className="card flat" data-testid="analogy"><strong>🧠 Аналогия. </strong><Inline text={skill.lesson.analogy} />{visual && ex.lang === 'python' && <div className="tiny muted" style={{ marginTop: 4 }}>Режим «Визуально»: ниже сразу открыт пошаговый просмотр с переменными.</div>}</div>
         )}
         <div className="row tight">
           <span className="small muted">Не до конца понятно?</span>
           {depth !== 'brief' && <button className="btn sm ghost" onClick={() => setDepth('brief')}>Объясни проще</button>}
           {depth !== 'deep' && <button className="btn sm ghost" onClick={() => setDepth('deep')}>Подробнее, «под капотом»</button>}
-          {!L.showAnalogies && skill.lesson.analogy && <button className="btn sm ghost" onClick={() => actions().updateSettings({ learning: { showAnalogies: true } })}>Показывать аналогии</button>}
+          {am === 'none' && skill.lesson.analogy && <button className="btn sm ghost" onClick={() => actions().updateSettings({ learning: { showAnalogies: true, analogyStyle: L.analogyStyle === 'none' ? 'everyday' : L.analogyStyle } })}>Показывать аналогии</button>}
           <a className="btn sm ghost" href="#counterexample">Ещё пример</a>
         </div>
+        <AiExplainAgain skillTitle={skill.title} lesson={content} exampleCode={ex.code} lang={ex.lang} />
       </div>
 
       <div className="card stack">
