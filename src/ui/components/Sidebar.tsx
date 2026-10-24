@@ -63,7 +63,7 @@ export function Sidebar({ loc, onPalette }: { loc: Loc; onPalette: () => void })
 
 export function BottomNav({ loc }: { loc: Loc }) {
   const badges = useBadges();
-  const items = [NAV[0], NAV[1], NAV[3], NAV[7], SETTINGS_NAV];
+  const items = [...['', 'routes', 'review', 'progress'].map((m) => NAV.find((n) => n.match === m)!), SETTINGS_NAV];
   const current = loc.parts[0] ?? '';
   return (
     <nav className="bottom-nav" aria-label="Навигация">
