@@ -21,6 +21,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
   const cmds = useMemo<Cmd[]>(() => [
     ...[...NAV, SETTINGS_NAV].map((n) => ({ id: n.path, icon: n.icon, title: n.label, hint: 'Перейти', run: () => go(n.path) })),
     ...ROUTES.map((r) => ({ id: `r-${r.id}`, icon: r.icon, title: `Маршрут: ${r.title}`, hint: 'Маршрут', run: () => go(`/route/${r.id}`) })),
+    ...ROUTES.map((r) => ({ id: `b-${r.id}`, icon: '🐞', title: `Охота на баги: ${r.title}`, hint: 'Найти ошибку в коде', run: () => go(`/bughunt/${r.id}`) })),
     ...ROUTES.map((r) => ({ id: `d-${r.id}`, icon: '🩺', title: `Диагностика: ${r.title}`, hint: 'Проверить знания', run: () => go(`/diag/${r.id}`) })),
     ...ALL_SKILLS.map((s) => ({ id: `s-${s.id}`, icon: s.icon, title: s.title, hint: `Урок · ${ROUTES.find((r) => r.id === s.route)?.title}`, run: () => go(`/skill/${s.id}`) })),
     ...THEMES.map((t) => ({ id: `t-${t}`, icon: '🎨', title: `Тема: ${THEME_INFO[t]}`, hint: 'Оформление', run: () => actions().updateSettings({ appearance: { theme: t } }) })),
