@@ -365,3 +365,22 @@ pre.code .hl { background: color-mix(in srgb, var(--accent) 22%, transparent); d
 @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 .pulse { animation: pulse 2.4s ease-in-out infinite; }
 .fade-in { animation: slideup calc(var(--dur) * 1.6) var(--ease) both; }
+
+/* ---- settings search, custom theme editor, user profiles, AI tutor ---- */
+.settings-search { position: relative; }
+.settings-search input[type='search'] { width: 100%; padding: 10px 14px; font-size: 1rem; }
+.search-results { list-style: none; margin: 8px 0 0; padding: 6px; display: flex; flex-direction: column; gap: 2px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.search-results button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; color: var(--text); font: inherit; }
+.search-results button:hover, .search-results button:focus-visible { background: var(--surface-2); }
+.setting-row.flash { animation: setting-flash 2.2s ease-out; outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+@keyframes setting-flash { 0%, 60% { background: color-mix(in srgb, var(--accent) 22%, transparent); } 100% { background: transparent; } }
+.color-field { display: flex; align-items: center; gap: 10px; }
+.color-field input[type='color'] { width: 44px; height: 38px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); background: none; cursor: pointer; }
+.color-field input[type='text'] { width: 100%; max-width: 140px; }
+.custom-preview { border: 1px solid; border-radius: var(--radius); padding: 14px; }
+.custom-preview-card { border: 1px solid; border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.custom-preview-btn { color: #fff; padding: 4px 12px; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.9rem; }
+.custom-preview-code { margin: 6px 0 0; border: 1px solid; border-radius: var(--radius-sm); padding: 8px 10px; font-family: var(--font-code); font-size: 0.85rem; }
+.ai-box { border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 8px; }
+.ai-answer { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+.ai-answer blockquote { margin: 4px 0; }
