@@ -1,0 +1,50 @@
+[
+  {
+    "id": "py.dicts.g1",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 4,
+    "issues": [
+      "Подсказка 3 содержит готовую строку решения `counts[category] = counts.get(category, 0) + 1`, что фактически раскрывает ключевую часть решения; для учебного задания это слишком сильная подсказка."
+    ]
+  },
+  {
+    "id": "py.dicts.g2",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.dicts.g3",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Третья подсказка фактически раскрывает решение: она прямо предлагает заменить объединение на пересечение, а это и есть всё исправление.",
+      "Скрытые тесты слабоваты: проверки на пустой список и повторяющиеся товары проходят и на багованном коде; нет теста с пустой корзиной среди непустых или с тремя корзинами.",
+      "Уровень сложности завышен: задание сводится к замене одного оператора."
+    ]
+  },
+  {
+    "id": "py.dicts.g4",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.dicts.g5",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.dicts.g6",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  }
+]
