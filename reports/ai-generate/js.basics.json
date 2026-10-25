@@ -1,0 +1,48 @@
+[
+  {
+    "id": "js.basics.g1",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "js.basics.g2",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Подсказка 3 содержит готовую строку решения: console.log(`Итого: ${price * quantity}`), а подсказка 2 — преобразование через Number(prompt()); вместе они выдают решение целиком.",
+      "Метка скрытого теста «двузначные числа не склеиваются» неточна: входные числа 7 и 6 однозначные, двузначный только результат.",
+      "Тесты не проверяют необходимость явного Number(...): при замене + на * строки приводятся к числам автоматически, поэтому заявленное в подсказке преобразование не является обязательным для прохождения."
+    ]
+  },
+  {
+    "id": "js.basics.g3",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "js.basics.g5",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "js.basics.g4",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "js.basics.g6",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  }
+]

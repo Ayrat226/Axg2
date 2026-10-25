@@ -38,7 +38,7 @@ async function reviewSkill(skill: Skill, exercises: Exercise[], model: string): 
   for (let i = 0; i < exercises.length; i += 3) {
     units.push(JSON.stringify({ skill: { ...head, misconceptions: skill.misconceptions.map((m) => ({ id: m.id, title: m.title })) }, exercises: exercises.slice(i, i + 3) }, null, 1));
   }
-  const results = await Promise.all(units.map((u) => chatJson<Issue[]>({ model, system: SYSTEM, user: `Фрагмент темы курса:\n${u}`, maxTokens: 16000, temperature: 0.2 }).catch(() => null)));
+  const results = await Promise.all(units.map((u) => chatJson<Issue[]>({ model, system: SYSTEM, user: `Фрагмент темы курса:\n${u}`, maxTokens: Number(process.env.REVIEW_MAX_TOKENS ?? 6000), temperature: 0.2 }).catch(() => null)));
   if (results.every((r) => r === null)) throw new Error('all review units failed');
   return results.flatMap((r) => (Array.isArray(r) ? r : [])).filter((i) => i && i.problem).map((i) => ({ ...i, reviewer: model }));
 }
