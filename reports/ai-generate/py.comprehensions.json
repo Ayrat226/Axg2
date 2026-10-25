@@ -1,0 +1,51 @@
+[
+  {
+    "id": "py.comprehensions.g2",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.comprehensions.g1",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.comprehensions.g3",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Третья подсказка содержит готовое решение целиком: `(name for name, active in events if active)`, поэтому задание теряет смысл как упражнение.",
+      "Видимые тесты проходят и на багованном коде: они проверяют только результат, а ленивость/тип возвращаемого объекта ловится лишь скрытым тестом. Это снижает обучающую обратную связь."
+    ]
+  },
+  {
+    "id": "py.comprehensions.g4",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.comprehensions.g5",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Формулировка не говорит, что в `emails` могут быть строки без `@`. Для описанных корректных адресов вариант `{email.split(\"@\")[1] for email in emails}` тоже даёт нужное множество уникальных доменов, поэтому правильных вариантов фактически два; пояснение `why` у этого варианта опирается на неоговорённое условие.",
+      "В объяснении опечатка: «списоковое включение» вместо «списковое включение»; фраза «Для множества используются фигурные скобки» без уточнения может путать, так как фигурные скобки также используются для словаря.",
+      "Метка `misconception` `generator-is-list` у варианта со списковым включением неточна: здесь различие между списком и множеством, а не между генератором и списком."
+    ]
+  },
+  {
+    "id": "py.comprehensions.g6",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  }
+]
