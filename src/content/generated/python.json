@@ -633,5 +633,931 @@
   "tags": [
    "ai"
   ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Заказ в службе доставки хранится как кортеж: список товаров и число порций. Что выведет программа?",
+  "code": "order = ([\"хлеб\", \"молоко\"], 2)\nitems = order[0]\nitems.append(\"сыр\")\ncopy = items[:]\ncopy.remove(\"хлеб\")\nprint(order[0])\nprint(copy)",
+  "answer": "['хлеб', 'молоко', 'сыр']\n['молоко', 'сыр']",
+  "explanation": "Кортеж неизменяем, но это защищает только его собственные ячейки: внутри лежит обычный список, и `items.append(\"сыр\")` меняет именно его — это видно через `order[0]`. А `items[:]` создаёт новый список, поэтому `copy.remove(\"хлеб\")` на исходный список не влияет.",
+  "id": "py.lists.g1",
+  "skill": "py.lists",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "code",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "В интернет-магазине каждая позиция заказа хранится как кортеж `(название, количество)`. Напишите функцию `cart_rows(items)`, которая возвращает новый список списков `[[название, количество], ...]`. Каждая строка результата должна быть отдельным списком, чтобы изменение одной строки не затрагивало другие. Исходный список менять нельзя.",
+  "starter": "def cart_rows(items):\n    rows = [[None, None]] * len(items)\n    for i, (name, qty) in enumerate(items):\n        rows[i][0] = name\n        rows[i][1] = qty\n    return rows\n",
+  "solution": "def cart_rows(items):\n    return [[name, qty] for name, qty in items]\n",
+  "tests": [
+   {
+    "expr": "cart_rows([('яблоко', 2), ('хлеб', 1)])",
+    "expect": "[['яблоко', 2], ['хлеб', 1]]"
+   },
+   {
+    "expr": "cart_rows([])",
+    "expect": "[]"
+   },
+   {
+    "expr": "cart_rows([('яблоко', 2), ('хлеб', 1)])",
+    "expect": "[['яблоко', 2], ['хлеб', 1]]",
+    "hidden": true,
+    "label": "пустой заказ"
+   },
+   {
+    "expr": "(lambda rows: (rows[0].append('чек'), rows)[1])(cart_rows([('яблоко', 2), ('хлеб', 1)]))",
+    "expect": "[['яблоко', 2, 'чек'], ['хлеб', 1]]",
+    "hidden": true,
+    "label": "строки результата независимы"
+   }
+  ],
+  "hints": [
+   "Результат должен содержать списки, а не кортежи.",
+   "Для каждой позиции можно создать отдельный список `[name, qty]`.",
+   "Убедитесь, что при изменении первой строки вторая остаётся прежней."
+  ],
+  "explanation": "В решении для каждой позиции создаётся новый список `[name, qty]`. Поэтому строки результата независимы друг от друга. Исходные кортежи не изменяются, поскольку программа только читает их элементы. Стартовый вариант создаёт одну общую строку с помощью `[[None, None]] * len(items)`, поэтому изменение первой позиции отражается на всех строках.",
+  "id": "py.lists.g2",
+  "skill": "py.lists",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 3,
+  "lang": "python",
+  "prompt": "Корзина в интернет-магазине — это список строк вида `[название, количество]`. Функция `restock(cart, name, qty)` должна вернуть **новую** корзину: если товар есть — увеличить количество, если нет — добавить его в конец. Исходная корзина меняться не должна. Сейчас после вызова меняется и исходная корзина, а новый товар вообще не добавляется. Исправьте функцию.",
+  "buggy": "def restock(cart, name, qty):\n    new_cart = cart[:]\n    for row in new_cart:\n        if row[0] == name:\n            row[1] = row[1] + qty\n    return new_cart\n",
+  "solution": "def restock(cart, name, qty):\n    new_cart = [row[:] for row in cart]\n    for row in new_cart:\n        if row[0] == name:\n            row[1] = row[1] + qty\n            return new_cart\n    new_cart.append([name, qty])\n    return new_cart\n",
+  "bugType": "logic",
+  "tests": [
+   {
+    "expr": "restock([[\"яблоко\", 2], [\"груша\", 1]], \"яблоко\", 3)",
+    "expect": "[[\"яблоко\", 5], [\"груша\", 1]]"
+   },
+   {
+    "expr": "restock([[\"яблоко\", 2]], \"сыр\", 1)",
+    "expect": "[[\"яблоко\", 2], [\"сыр\", 1]]"
+   },
+   {
+    "expr": "(lambda c: (restock(c, \"яблоко\", 3), c)[1])([[\"яблоко\", 2]])",
+    "expect": "[[\"яблоко\", 2]]",
+    "hidden": true,
+    "label": "исходная корзина не меняется"
+   },
+   {
+    "expr": "(lambda c: (restock(c, \"груша\", 5), c)[1])([[\"яблоко\", 2], [\"груша\", 1]])",
+    "expect": "[[\"яблоко\", 2], [\"груша\", 1]]",
+    "hidden": true,
+    "label": "несколько строк, исходник не тронут"
+   },
+   {
+    "expr": "restock([], \"сыр\", 2)",
+    "expect": "[[\"сыр\", 2]]",
+    "hidden": true,
+    "label": "пустая корзина"
+   }
+  ],
+  "hints": [
+   "Сравните корзину до и после вызова: какие именно объекты изменились?",
+   "`cart[:]` копирует только внешний список. Строки `[\"яблоко\", 2]` внутри — те же самые объекты, что и в исходной корзине.",
+   "Скопируйте каждую строку отдельно: `[row[:] for row in cart]`. И не забудьте про случай, когда товара в корзине нет."
+  ],
+  "explanation": "Срез `cart[:]` делает поверхностную копию: новый внешний список, но элементы-строки общие. Присваивание `row[1] = ...` меняет общий внутренний список, поэтому «копия» портит оригинал. Нужна копия каждой строки. Вторая ошибка — отсутствие ветки `else`: если товар не найден, его надо добавить через `append` и вернуть результат, иначе функция вернёт корзину без нового товара.",
+  "id": "py.lists.g3",
+  "skill": "py.lists",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 2,
+  "lang": "python",
+  "bugType": "logic",
+  "prompt": "Функция `copy_cart(items)` должна создать поверхностную копию списка позиций, добавить в копию позицию `('audit', 0)` и вернуть её. Исходный список `items` изменять нельзя. Исправьте код.",
+  "buggy": "def copy_cart(items):\n    result = items\n    result.append(('audit', 0))\n    return result\n",
+  "solution": "def copy_cart(items):\n    result = items.copy()\n    result.append(('audit', 0))\n    return result\n",
+  "tests": [
+   {
+    "expr": "copy_cart([('яблоко', 2)])",
+    "expect": "[('яблоко', 2), ('audit', 0)]"
+   },
+   {
+    "expr": "(lambda original: (copy_cart(original), original)[1])([('яблоко', 2)])",
+    "expect": "[('яблоко', 2)]"
+   },
+   {
+    "expr": "copy_cart([])",
+    "expect": "[('audit', 0)]",
+    "hidden": true,
+    "label": "пустой исходный список"
+   },
+   {
+    "expr": "(lambda original: (copy_cart(original), original)[1])([('хлеб', 1), ('сыр', 2)])",
+    "expect": "[('хлеб', 1), ('сыр', 2)]",
+    "hidden": true,
+    "label": "исходный список не изменён"
+   }
+  ],
+  "hints": [
+   "Проверьте, что `result` и `items` ссылаются на один и тот же список.",
+   "Для копирования списка используйте `items.copy()` или срез `items[:]`.",
+   "Добавляйте `('audit', 0)` уже в копию, а не в исходный список."
+  ],
+  "explanation": "Присваивание `result = items` создаёт второе имя того же списка, а не его копию. Поэтому `append` изменяет исходный `items`. Метод `items.copy()` создаёт новый список, поэтому добавление служебной позиции затрагивает только результат.",
+  "id": "py.lists.g4",
+  "skill": "py.lists",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Что выведет программа? В кортеже находится список коробок. Кортеж неизменяемый, но его содержимое может вести себя иначе.",
+  "code": "parcel = ('посылка', ['коробка'])\nparcel[1].append('коробка-2')\nprint(parcel)",
+  "answer": "('посылка', ['коробка', 'коробка-2'])",
+  "explanation": "Кортеж `parcel` нельзя заменить или изменить его структуру, но список внутри него остаётся изменяемым. Метод `append` добавляет элемент во внутренний список, поэтому второй элемент кортежа становится `['коробка', 'коробка-2']`. Неизменяемость кортежа не означает неизменяемость всех вложенных объектов.",
+  "id": "py.lists.g6",
+  "skill": "py.lists",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "code",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "В школьном журнале оценки хранятся как словарь «ученик → балл». Напишите функцию `invert(d)`, которая строит обратный словарь «балл → список учеников с этим баллом». Ученики в каждом списке идут в том порядке, в каком они были в исходном словаре. Если словарь пуст — вернуть пустой словарь.",
+  "starter": "def invert(d):\n    pass\n",
+  "solution": "def invert(d):\n    result = {}\n    for name, mark in d.items():\n        result.setdefault(mark, []).append(name)\n    return result\n",
+  "tests": [
+   {
+    "expr": "invert({\"Аня\": 5, \"Боря\": 4})",
+    "expect": "{5: [\"Аня\"], 4: [\"Боря\"]}"
+   },
+   {
+    "expr": "invert({\"Аня\": 5, \"Боря\": 4, \"Вера\": 5})",
+    "expect": "{5: [\"Аня\", \"Вера\"], 4: [\"Боря\"]}"
+   },
+   {
+    "expr": "invert({})",
+    "expect": "{}",
+    "hidden": true,
+    "label": "пустой словарь"
+   },
+   {
+    "expr": "invert({\"Гоша\": 0})",
+    "expect": "{0: [\"Гоша\"]}",
+    "hidden": true,
+    "label": "нулевой балл"
+   },
+   {
+    "expr": "invert({\"Яна\": 3, \"Дима\": 3})",
+    "expect": "{3: [\"Яна\", \"Дима\"]}",
+    "hidden": true,
+    "label": "порядок добавления в список"
+   }
+  ],
+  "hints": [
+   "Что станет ключом результата, а что — значением? В каком направлении «переворачивается» пара?",
+   "Одному баллу может соответствовать несколько учеников, значит значением должен быть список.",
+   "`result.setdefault(mark, []).append(name)` — при первом появлении балла создаёт пустой список и сразу возвращает его для добавления."
+  ],
+  "explanation": "Ключи словаря уникальны, а значения — нет, поэтому при «перевороте» одинаковые значения надо собирать в список. `setdefault(mark, [])` создаёт список только при первой встрече балла и в обоих случаях возвращает нужный список, поэтому `append` не теряет данные и не падает с KeyError.",
+  "id": "py.dicts.g2",
+  "skill": "py.dicts",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Функция `only_in_first(a, b)` должна вернуть **отсортированный список** элементов, которые есть в первом списке, но отсутствуют во втором (повторы в ответе не нужны). Сейчас она возвращает не то. Исправьте одну операцию.",
+  "buggy": "def only_in_first(a, b):\n    return sorted(set(a) & set(b))\n",
+  "solution": "def only_in_first(a, b):\n    return sorted(set(a) - set(b))\n",
+  "bugType": "logic",
+  "tests": [
+   {
+    "expr": "only_in_first([1, 2, 3], [2, 3, 4])",
+    "expect": "[1]"
+   },
+   {
+    "expr": "only_in_first([\"яблоко\", \"груша\"], [\"груша\"])",
+    "expect": "[\"яблоко\"]"
+   },
+   {
+    "expr": "only_in_first([], [1, 2])",
+    "expect": "[]",
+    "hidden": true,
+    "label": "первый список пуст"
+   },
+   {
+    "expr": "only_in_first([1, 1, 2, 3], [3])",
+    "expect": "[1, 2]",
+    "hidden": true,
+    "label": "повторы в первом списке"
+   },
+   {
+    "expr": "only_in_first([1, 2], [1, 2])",
+    "expect": "[]",
+    "hidden": true,
+    "label": "списки совпадают"
+   }
+  ],
+  "hints": [
+   "Сравните смысл операторов `&` и `-` для множеств: какой из них даёт «есть в обоих», а какой — «есть в первом, но не во втором»?",
+   "Проверьте на примере: для `[1, 2, 3]` и `[2, 3, 4]` ответ должен быть `[1]`, а не `[2, 3]`.",
+   "Оставьте `set(a)` и `set(b)`, но замените операцию между ними на разность."
+  ],
+  "explanation": "`&` — пересечение, оно даёт элементы, присутствующие в обоих списках, то есть ровно противоположное условию. Нужна разность `set(a) - set(b)`: она оставляет элементы первого множества, которых нет во втором, а `sorted` превращает результат в отсортированный список.",
+  "id": "py.dicts.g4",
+  "skill": "py.dicts",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "В репозитории `installed` хранит установленные зависимости, а `approved` — разрешённые зависимости. Определите точный вывод программы. Порядок множеств не гарантирован, поэтому перед выводом используется `sorted`.",
+  "code": "installed = {\"requests\", \"numpy\", \"pandas\"}\napproved = {\"numpy\", \"pandas\", \"pytest\"}\n\nprint(\"common:\", sorted(installed & approved))\nprint(\"missing:\", sorted(approved - installed))\nprint(\"combined:\", sorted(installed | approved))",
+  "answer": "common: ['numpy', 'pandas']\nmissing: ['pytest']\ncombined: ['numpy', 'pandas', 'pytest', 'requests']",
+  "explanation": "`installed & approved` находит общие зависимости: `numpy` и `pandas`. `approved - installed` оставляет разрешённые, но ещё не установленные зависимости: `pytest`. `installed | approved` объединяет оба множества. Функция `sorted` обеспечивает предсказуемый порядок вывода.",
+  "id": "py.dicts.g5",
+  "skill": "py.dicts",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 3,
+  "lang": "python",
+  "prompt": "Что выведет программа? Запишите точный вывод одной строкой.",
+  "code": "d = {\"x\": 1, \"y\": 2}\nd.setdefault(\"x\", 9)\nd.setdefault(\"z\", 9)\nkeys = set(d)\nprint(d, sorted(keys & {\"x\", \"w\"}), d.get(\"w\", \"нет\"))",
+  "answer": "{'x': 1, 'y': 2, 'z': 9} ['x'] нет",
+  "explanation": "`setdefault` добавляет ключ только если его нет: для существующего `\"x\"` значение 1 остаётся, а `\"z\"` добавляется в конец (словарь помнит порядок вставки). `set(d)` — множество ключей, `&` оставляет общие с `{\"x\", \"w\"}` элементы, `sorted` даёт список `['x']`. `d.get(\"w\", \"нет\")` не меняет словарь и возвращает значение по умолчанию `нет`, которое печатается без кавычек.",
+  "id": "py.dicts.g6",
+  "skill": "py.dicts",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 3,
+  "lang": "python",
+  "prompt": "Что выведет программа? Обратите внимание, куда попадают аргументы при каждом вызове.",
+  "code": "def join_all(*parts, sep=\"-\"):\n    return sep.join(parts)\n\nprint(join_all(\"a\", \"b\"))\nprint(join_all(\"a\", \"b\", sep=\"+\"))\nprint(join_all(\"x\"))",
+  "answer": "a-b\na+b\nx",
+  "explanation": "`*parts` собирает все позиционные аргументы в кортеж, поэтому `\"a\"` и `\"b\"` оказываются в `parts`. Параметр `sep` стоит после `*parts`, значит он только именованный: передать его позиционно нельзя, и в `parts` он никогда не попадает. Первый вызов берёт умолчание `\"-\"` → `a-b`, второй подставляет `\"+\"` → `a+b`, третий соединяет один элемент → `x` (без разделителя).",
+  "id": "py.functions.g1",
+  "skill": "py.functions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "code",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Напишите функцию `build_query(**params)`, которая собирает строку URL-запроса из именованных аргументов: `build_query(a=1, b=2)` → `\"a=1&b=2\"`. Порядок пар — как в вызове. Вызов без аргументов возвращает пустую строку `\"\"`.",
+  "starter": "def build_query(**params):\n    pass\n",
+  "solution": "def build_query(**params):\n    return \"&\".join(f\"{k}={v}\" for k, v in params.items())\n",
+  "tests": [
+   {
+    "expr": "build_query(a=1, b=2)",
+    "expect": "\"a=1&b=2\""
+   },
+   {
+    "expr": "build_query(q=\"python\")",
+    "expect": "\"q=python\""
+   },
+   {
+    "expr": "build_query()",
+    "expect": "\"\"",
+    "hidden": true,
+    "label": "без аргументов — пустая строка"
+   },
+   {
+    "expr": "build_query(x=0, y=-1)",
+    "expect": "\"x=0&y=-1\"",
+    "hidden": true,
+    "label": "нули и отрицательные значения"
+   },
+   {
+    "expr": "build_query(tag=\"a b\")",
+    "expect": "\"tag=a b\"",
+    "hidden": true,
+    "label": "значение с пробелом внутри"
+   }
+  ],
+  "hints": [
+   "Во что превращается набор именованных аргументов внутри функции с `**params`?",
+   "Это словарь: у него есть `.items()`, который даёт пары `(ключ, значение)`.",
+   "Сделайте список строк `f\"{k}={v}\"` и склейте его через `\"&\".join(...)`. Для пустого словаря `join` вернёт пустую строку."
+  ],
+  "explanation": "`**params` собирает именованные аргументы в словарь, сохраняя порядок передачи. Склейка пустого списка через `join` даёт `\"\"` — отдельная проверка на пустоту не нужна, поэтому вызов без аргументов работает сам собой.",
+  "id": "py.functions.g3",
+  "skill": "py.functions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 2,
+  "lang": "python",
+  "bugType": "logic",
+  "prompt": "Функция `first_long(words, min_len)` должна возвращать **первое** слово длиной не меньше `min_len`, а если подходящего нет — `None`. Сейчас она возвращает не то. Исправьте функцию.",
+  "buggy": "def first_long(words, min_len):\n    found = None\n    for w in words:\n        if len(w) >= min_len:\n            found = w\n    return found\n",
+  "solution": "def first_long(words, min_len):\n    for w in words:\n        if len(w) >= min_len:\n            return w\n    return None\n",
+  "tests": [
+   {
+    "expr": "first_long([\"a\", \"bbb\", \"cc\", \"dddd\"], 2)",
+    "expect": "\"bbb\""
+   },
+   {
+    "expr": "first_long([\"a\", \"b\"], 3)",
+    "expect": "None"
+   },
+   {
+    "expr": "first_long([], 1)",
+    "expect": "None",
+    "hidden": true,
+    "label": "пустой список"
+   },
+   {
+    "expr": "first_long([\"hello\"], 5)",
+    "expect": "\"hello\"",
+    "hidden": true,
+    "label": "единственное подходящее слово"
+   },
+   {
+    "expr": "first_long([\"xx\", \"yyy\", \"z\"], 2)",
+    "expect": "\"xx\"",
+    "hidden": true,
+    "label": "нужно именно первое совпадение"
+   }
+  ],
+  "hints": [
+   "Вызовите `first_long([\"a\", \"bbb\", \"cc\", \"dddd\"], 2)`. Почему ответ `\"dddd\"`, а не `\"bbb\"`?",
+   "Цикл не прерывается: переменная `found` перезаписывается каждым подходящим словом, поэтому остаётся последнее.",
+   "`return` немедленно завершает функцию — верните слово прямо внутри `if`, а `return None` оставьте после цикла."
+  ],
+  "explanation": "Накопление в переменную с последующим `return` после цикла даёт последнее совпадение. `return` внутри `if` завершает функцию на первом же подходящем слове; если цикл дошёл до конца без возврата, срабатывает `return None` после цикла.",
+  "id": "py.functions.g5",
+  "skill": "py.functions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 3,
+  "lang": "python",
+  "prompt": "Определите точный вывод программы. Обратите внимание на область видимости `currency` и на то, какое значение захватывает вложенная функция.",
+  "code": "currency = \"RUB\"\n\ndef make_receipt(amount):\n    currency = \"USD\"\n\n    def format_amount(value):\n        return f\"{currency} {value}\"\n\n    return format_amount(amount)\n\nprint(make_receipt(10))\nprint(currency)",
+  "answer": "USD 10\nRUB",
+  "explanation": "Перед вызовом вложенной функции `format_amount` выполняется присваивание `currency = \"USD\"` в области видимости `make_receipt`. Вложенная функция захватывает именно локальную переменную `currency` этой функции, поэтому первая строка содержит `USD 10`. Глобальная переменная `currency` не меняется и остаётся равной `RUB`.",
+  "id": "py.functions.g6",
+  "skill": "py.functions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Что выведет программа? Запишите строки в том порядке, в котором они появятся.",
+  "code": "def f(x):\n    try:\n        if x == 0:\n            raise ValueError(\"ноль\")\n        return 10 // x\n    except ValueError as e:\n        print(\"поймали:\", e)\n        return -1\n    finally:\n        print(\"finally\")\n\n\nprint(f(0))\nprint(f(5))",
+  "answer": "поймали: ноль\nfinally\n-1\nfinally\n2",
+  "explanation": "`f(0)` поднимает `ValueError`, его ловит `except`: печатается `поймали: ноль`, затем `return -1`. Но перед фактическим возвратом выполняется `finally` — печатается `finally`, и только потом внешний `print` выводит `-1`. Для `f(5)` ошибки нет, `10 // 5` равно 2, `except` пропускается, `finally` снова печатает `finally`, и внешний `print` выводит `2`. `finally` выполняется всегда — и при ошибке, и без неё, и даже когда в `try`/`except` стоит `return`.",
+  "id": "py.errors.g3",
+  "skill": "py.errors",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "mcq",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Что произойдёт при запуске этого кода?",
+  "code": "def get(data, key):\n    try:\n        return data[key]\n    except IndexError:\n        return \"нет элемента\"\n\n\nprint(get({\"a\": 1}, \"b\"))",
+  "options": [
+   {
+    "text": "Программа завершится с ошибкой KeyError: ключа \"b\" в словаре нет, а ловится только IndexError",
+    "correct": true,
+    "why": "`data[\"b\"]` для словаря без такого ключа даёт KeyError. Блок `except IndexError` перехватывает другой тип, поэтому исключение уходит наружу и программа аварийно завершается."
+   },
+   {
+    "text": "Напечатает «нет элемента»",
+    "why": "Так было бы, если бы ловился KeyError. `except IndexError` не перехватывает KeyError — это разные классы, ни один не является предком другого."
+   },
+   {
+    "text": "Напечатает None",
+    "why": "Исключение не поймано, поэтому до `print` управление не доходит: программа падает с трейсбеком, а не возвращает None."
+   },
+   {
+    "text": "Программа завершится с ошибкой IndexError",
+    "why": "IndexError возникает при выходе за границы последовательности (список, строка). У словаря нет индексов — при отсутствии ключа поднимается KeyError."
+   }
+  ],
+  "explanation": "KeyError и IndexError — разные исключения: первое про отсутствующий ключ словаря, второе про индекс за границами списка или строки. Ловить нужно именно тот тип, который реально возможен, иначе ошибка пролетит мимо `except` и программа упадёт с трейсбеком.",
+  "id": "py.errors.g5",
+  "skill": "py.errors",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 3,
+  "lang": "python",
+  "bugType": "logic",
+  "prompt": "Сервис читает порт из словаря конфигурации. Исправьте `load_port(config)` и вспомогательную функцию `load_port_result(config)`. Порт должен быть целым числом от 1 до 65535 либо строкой, содержащей такое целое число; `bool`, числа с дробной частью и другие типы недопустимы. При ошибке должен выбрасываться `ConfigError` с сообщением `не указан корректный порт`, причём исходная ошибка (`KeyError`, `TypeError` или `ValueError`) должна сохраняться как явная причина через `raise ... from ...`. Функция `load_port_result(config)` при успехе возвращает кортеж `(\"ok\", port)`, а при `ConfigError` — кортеж `(\"error\", \"ConfigError\", str(exc), type(exc.__cause__).__name__)`.",
+  "buggy": "class ConfigError(Exception):\n    pass\n\n\ndef load_port(config):\n    try:\n        value = config[\"port\"]\n        port = int(value)\n        if not 1 <= port <= 65535:\n            raise ValueError(\"порт вне диапазона\")\n        return port\n    except (KeyError, TypeError, ValueError):\n        raise ConfigError(\"порт отсутствует или неверен\")\n\n\ndef load_port_result(config):\n    try:\n        return (\"ok\", load_port(config))\n    except ConfigError as exc:\n        return (\"error\", type(exc).__name__, str(exc), type(exc.__cause__).__name__)\n",
+  "solution": "class ConfigError(Exception):\n    pass\n\n\ndef load_port(config):\n    try:\n        value = config[\"port\"]\n        if isinstance(value, bool) or not isinstance(value, (int, str)):\n            raise TypeError(\"порт должен быть целым числом или строкой\")\n        port = int(value)\n        if not 1 <= port <= 65535:\n            raise ValueError(\"порт вне диапазона\")\n        return port\n    except (KeyError, TypeError, ValueError) as exc:\n        raise ConfigError(\"не указан корректный порт\") from exc\n\n\ndef load_port_result(config):\n    try:\n        return (\"ok\", load_port(config))\n    except ConfigError as exc:\n        return (\"error\", type(exc).__name__, str(exc), type(exc.__cause__).__name__)\n",
+  "tests": [
+   {
+    "expr": "load_port_result({\"port\": 8080})",
+    "expect": "(\"ok\", 8080)"
+   },
+   {
+    "expr": "load_port_result({\"port\": \"443\"})",
+    "expect": "(\"ok\", 443)"
+   },
+   {
+    "expr": "load_port_result({})",
+    "expect": "(\"error\", \"ConfigError\", \"не указан корректный порт\", \"KeyError\")"
+   },
+   {
+    "expr": "load_port_result({\"port\": 0})",
+    "expect": "(\"error\", \"ConfigError\", \"не указан корректный порт\", \"ValueError\")",
+    "hidden": true,
+    "label": "порт вне диапазона сохраняет ValueError как причину"
+   },
+   {
+    "expr": "load_port_result({\"port\": 80.5})",
+    "expect": "(\"error\", \"ConfigError\", \"не указан корректный порт\", \"TypeError\")",
+    "hidden": true,
+    "label": "число с дробной частью недопустимо"
+   },
+   {
+    "expr": "load_port_result({\"port\": True})",
+    "expect": "(\"error\", \"ConfigError\", \"не указан корректный порт\", \"TypeError\")",
+    "hidden": true,
+    "label": "bool не принимается как целый порт"
+   },
+   {
+    "expr": "load_port_result({\"port\": \"70000\"})",
+    "expect": "(\"error\", \"ConfigError\", \"не указан корректный порт\", \"ValueError\")",
+    "hidden": true,
+    "label": "строковый порт также проверяется по диапазону"
+   }
+  ],
+  "hints": [
+   "В исходном коде `bool` неявно проходит через `int(value)`, а дробное число молча обрезается.",
+   "Чтобы сохранить исходное исключение, перехватите его как `exc` и используйте `raise ConfigError(...) from exc`.",
+   "Перед преобразованием проверьте, что значение имеет тип `int` или `str`, но не является `bool`."
+  ],
+  "explanation": "Ошибка состояла в неполной проверке типа: `int(True)` даёт 1, а `int(80.5)` даёт 80. Кроме того, обычный `raise` внутри `except` задаёт неявный контекст, но не задаёт явную причину `__cause__`. Исправление проверяет тип и диапазон, а `raise ... from exc` сохраняет исходный тип исключения для диагностики.",
+  "id": "py.errors.g4",
+  "skill": "py.errors",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 3,
+  "lang": "python",
+  "prompt": "Определите точный текст, который программа выведет в stdout. Учитывайте порядок блоков `except`, повторный вызов `raise`, выполнение `finally` и внешний перехват исключения.",
+  "code": "class TemporaryError(Exception):\n    pass\n\n\ndef run(mode):\n    try:\n        if mode == \"temp\":\n            raise TemporaryError(\"temporary\")\n        if mode == \"value\":\n            raise ValueError(\"bad value\")\n    except TemporaryError:\n        print(\"retry\")\n        raise\n    except ValueError:\n        print(\"invalid\")\n    else:\n        print(\"ok\")\n    finally:\n        print(\"cleanup\")\n\n\ntry:\n    run(\"temp\")\nexcept TemporaryError:\n    print(\"stop\")",
+  "answer": "retry\ncleanup\nstop",
+  "explanation": "Внутренний `except TemporaryError` печатает `retry` и повторно выбрасывает то же исключение через `raise`. До выхода из функции выполняется `finally`, поэтому печатается `cleanup`. Затем внешний блок перехватывает `TemporaryError` и печатает `stop`. Ветка `except ValueError` не участвует, а `else` пропускается из-за возникшего исключения.",
+  "id": "py.errors.g6",
+  "skill": "py.errors",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "code",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "В интернет-магазине нужно подготовить строки каталога по двум спискам: названия товаров и их цены. Напишите функцию `format_catalog(names, prices)`, которая возвращает список строк вида `\"название: цена\"` для пар, расположенных на одинаковых позициях. Если длины списков различаются, обрабатывайте только пары до конца более короткого списка; порядок сохраняйте.",
+  "starter": "def format_catalog(names, prices):\n    pass\n",
+  "solution": "def format_catalog(names, prices):\n    return [f\"{name}: {price}\" for name, price in zip(names, prices)]\n",
+  "tests": [
+   {
+    "expr": "format_catalog([\"книга\", \"ручка\"], [250, 120])",
+    "expect": "[\"книга: 250\", \"ручка: 120\"]"
+   },
+   {
+    "expr": "format_catalog([\"книга\"], [250, 120])",
+    "expect": "[\"книга: 250\"]"
+   },
+   {
+    "expr": "format_catalog([], [])",
+    "expect": "[]",
+    "hidden": true,
+    "label": "пустые списки"
+   },
+   {
+    "expr": "format_catalog([\"книга\", \"ручка\"], [250])",
+    "expect": "[\"книга: 250\"]",
+    "hidden": true,
+    "label": "разные длины списков"
+   },
+   {
+    "expr": "format_catalog([\"ручка\", \"ручка\"], [120, 125])",
+    "expect": "[\"ручка: 120\", \"ручка: 125\"]",
+    "hidden": true,
+    "label": "повторяющиеся названия"
+   }
+  ],
+  "hints": [
+   "Какая функция соединяет элементы двух последовательностей попарно?",
+   "Если последовательности имеют разные длины, `zip` останавливается на более короткой из них.",
+   "Используйте включение по результату `zip(names, prices)` и форматирование строки через f-string."
+  ],
+  "explanation": "Включение перебирает пары, полученные функцией `zip`, и создаёт новый список. `zip` не дополняет короткий список, поэтому лишние элементы игнорируются. Стартовый код с `pass` не возвращает требуемый список и не проходит тесты.",
+  "id": "py.comprehensions.g2",
+  "skill": "py.comprehensions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "code",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "В журнале событий хранятся коды. Напишите `positions(codes, target)`: вернуть список индексов (с нуля), под которыми в `codes` встречается `target`. Если совпадений нет — пустой список. Используйте `enumerate`.",
+  "starter": "def positions(codes, target):\n    pass\n",
+  "solution": "def positions(codes, target):\n    return [i for i, c in enumerate(codes) if c == target]\n",
+  "tests": [
+   {
+    "expr": "positions([5, 1, 5, 2, 5], 5)",
+    "expect": "[0, 2, 4]"
+   },
+   {
+    "expr": "positions([1, 2, 3], 9)",
+    "expect": "[]"
+   },
+   {
+    "expr": "positions([], 0)",
+    "expect": "[]",
+    "hidden": true,
+    "label": "пустой журнал"
+   },
+   {
+    "expr": "positions([\"a\", \"b\", \"a\"], \"a\")",
+    "expect": "[0, 2]",
+    "hidden": true,
+    "label": "строковые коды"
+   },
+   {
+    "expr": "positions([7], 7)",
+    "expect": "[0]",
+    "hidden": true,
+    "label": "единственный элемент совпадает"
+   }
+  ],
+  "hints": [
+   "Что даёт `enumerate(codes)` на каждой итерации — одно значение или пару?",
+   "В списковом включении можно распаковать пару прямо в заголовке: `for i, c in enumerate(codes)`.",
+   "Осталось оставить только нужные пары фильтром `if c == target` и взять в выражение индекс `i`."
+  ],
+  "explanation": "`enumerate` отдаёт пары (индекс, значение), поэтому индекс не нужно считать вручную. Включение с фильтром `if c == target` собирает только позиции совпадений; при отсутствии совпадений получается пустой список, а не ошибка.",
+  "id": "py.comprehensions.g1",
+  "skill": "py.comprehensions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 2,
+  "lang": "python",
+  "bugType": "runtime",
+  "prompt": "Функция должна вернуть список попарных сумм двух списков, причём при разной длине работа идёт по короткому списку (лишние элементы отбрасываются). Сейчас на разных длинах код падает. Исправьте его.",
+  "buggy": "def pair_sums(a, b):\n    result = []\n    for i in range(max(len(a), len(b))):\n        result.append(a[i] + b[i])\n    return result\n",
+  "solution": "def pair_sums(a, b):\n    return [x + y for x, y in zip(a, b)]\n",
+  "tests": [
+   {
+    "expr": "pair_sums([1, 2, 3], [10, 20, 30])",
+    "expect": "[11, 22, 33]"
+   },
+   {
+    "expr": "pair_sums([1, 2, 3], [10, 20])",
+    "expect": "[11, 22]"
+   },
+   {
+    "expr": "pair_sums([], [1, 2])",
+    "expect": "[]",
+    "hidden": true,
+    "label": "первый список пуст"
+   },
+   {
+    "expr": "pair_sums([5], [1, 2, 3])",
+    "expect": "[6]",
+    "hidden": true,
+    "label": "первый список короче"
+   },
+   {
+    "expr": "pair_sums([], [])",
+    "expect": "[]",
+    "hidden": true,
+    "label": "оба списка пусты"
+   }
+  ],
+  "hints": [
+   "На какой строке возникает ошибка и при каких входных данных?",
+   "`range(max(...))` заставляет цикл идти по длинному списку — а второй список в этот момент может уже кончиться.",
+   "`zip(a, b)` сам останавливается на коротком списке; пары можно распаковать в `for x, y in zip(a, b)`."
+  ],
+  "explanation": "`max(len(a), len(b))` заставляет индекс доходить до конца более длинного списка, поэтому обращение `b[i]` (или `a[i]`) выходит за границу и даёт `IndexError`. `zip` устроен наоборот: он прекращает выдачу, как только исчерпан самый короткий аргумент, — ровно то поведение, которое требуется.",
+  "id": "py.comprehensions.g4",
+  "skill": "py.comprehensions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 3,
+  "lang": "python",
+  "prompt": "Что выведет программа? Запишите точный вывод построчно.",
+  "code": "g = (x * x for x in range(4))\nprint(type(g).__name__)\nprint(sum(g))\nprint(list(g))",
+  "answer": "generator\n14\n[]",
+  "explanation": "Круглые скобки дают не список, а ленивый генератор — `type(g).__name__` равно `generator`. `sum(g)` по одному вытягивает все значения (0 + 1 + 4 + 9 = 14) и тем самым исчерпывает генератор: он одноразовый. Повторный проход `list(g)` уже ничего не получает, поэтому печатается пустой список.",
+  "id": "py.comprehensions.g6",
+  "skill": "py.comprehensions",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Что выведет программа? Обратите внимание, где Python берёт `__str__`, а где `__repr__`.",
+  "code": "class Point:\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def __str__(self):\n        return f\"({self.x}; {self.y})\"\n\n    def __repr__(self):\n        return f\"Point({self.x}, {self.y})\"\n\n\nclass Tag:\n    def __init__(self, name):\n        self.name = name\n\n    def __repr__(self):\n        return f\"<{self.name}>\"\n\n\np = Point(1, 2)\nprint(p)\nprint([p])\nprint(Tag(\"div\"))\nprint(repr(Tag(\"div\")))",
+  "answer": "(1; 2)\n[Point(1, 2)]\n<div>\n<div>",
+  "explanation": "`print(p)` вызывает `__str__` — получаем `(1; 2)`. Внутри списка печатается `repr` элементов, поэтому `[Point(1, 2)]`. У `Tag` определён только `__repr__`, а `__str__` по умолчанию сводится к нему — поэтому и `print(Tag(\"div\"))`, и явный `repr(...)` дают `<div>`.",
+  "id": "py.oop.g1",
+  "skill": "py.oop",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 3,
+  "lang": "python",
+  "bugType": "runtime",
+  "prompt": "Класс `Manager` наследует `Employee`, но вызов `Manager(\"Аня\", 100, 5).info()` падает с AttributeError. Найдите причину и исправьте класс `Manager` так, чтобы имя и зарплата сохранялись, а строка вида `Аня: 100 (команда: 5)` выводилась корректно.",
+  "buggy": "class Employee:\n    def __init__(self, name, salary):\n        self.name = name\n        self.salary = salary\n\n    def info(self):\n        return f\"{self.name}: {self.salary}\"\n\n\nclass Manager(Employee):\n    def __init__(self, name, salary, team):\n        self.team = team\n\n    def info(self):\n        return f\"{super().info()} (команда: {self.team})\"",
+  "solution": "class Employee:\n    def __init__(self, name, salary):\n        self.name = name\n        self.salary = salary\n\n    def info(self):\n        return f\"{self.name}: {self.salary}\"\n\n\nclass Manager(Employee):\n    def __init__(self, name, salary, team):\n        super().__init__(name, salary)\n        self.team = team\n\n    def info(self):\n        return f\"{super().info()} (команда: {self.team})\"",
+  "tests": [
+   {
+    "expr": "Manager(\"Аня\", 100, 5).info()",
+    "expect": "\"Аня: 100 (команда: 5)\""
+   },
+   {
+    "expr": "Manager(\"Боб\", 250, 1).name",
+    "expect": "\"Боб\""
+   },
+   {
+    "expr": "Manager(\"Вера\", 0, 0).info()",
+    "expect": "\"Вера: 0 (команда: 0)\"",
+    "hidden": true,
+    "label": "нулевая зарплата и команда из 0 человек"
+   },
+   {
+    "expr": "Employee(\"Глеб\", 10).info()",
+    "expect": "\"Глеб: 10\"",
+    "hidden": true,
+    "label": "базовый класс не сломан"
+   },
+   {
+    "expr": "isinstance(Manager(\"Дина\", 1, 2), Employee)",
+    "expect": "True",
+    "hidden": true,
+    "label": "менеджер остаётся сотрудником"
+   }
+  ],
+  "hints": [
+   "Прочитайте ошибку: какого атрибута не хватает объекту `Manager` при вызове `info()`?",
+   "`name` и `salary` создаются в `__init__` класса `Employee`. Вызывается ли он вообще, когда создаётся `Manager`?",
+   "В начале `Manager.__init__` вызовите родительский конструктор: `super().__init__(name, salary)` — до `self.team = team`."
+  ],
+  "explanation": "AttributeError: 'Manager' object has no attribute 'name'. Родительский `__init__` не вызывается автоматически: `Manager.__init__` перекрыл его и создал только `team`. Пока нет явного `super().__init__(name, salary)`, атрибуты `name` и `salary` не существуют, и `info()` (в том числе через `super().info()`) падает.",
+  "id": "py.oop.g3",
+  "skill": "py.oop",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "code",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Создайте класс `ReadingLog` для журнала показаний датчика. При создании `ReadingLog(readings)` он должен сохранять показания в публичном атрибуте `values` как отдельную копию списка. Метод `add_reading(value)` добавляет новое показание в конец `values` и ничего не возвращает. Методы `average()` и `max_reading()` возвращают среднее арифметическое и максимальное значение соответственно; для пустого журнала оба метода должны возвращать `None`.",
+  "starter": "class ReadingLog:\n    pass\n",
+  "solution": "class ReadingLog:\n    def __init__(self, readings):\n        self.values = list(readings)\n\n    def add_reading(self, value):\n        self.values.append(value)\n\n    def average(self):\n        if not self.values:\n            return None\n        return sum(self.values) / len(self.values)\n\n    def max_reading(self):\n        if not self.values:\n            return None\n        return max(self.values)\n",
+  "tests": [
+   {
+    "expr": "ReadingLog([1, 2, 3]).average()",
+    "expect": "2.0"
+   },
+   {
+    "expr": "ReadingLog([2, 5]).max_reading()",
+    "expect": "5"
+   },
+   {
+    "expr": "(lambda log: (log.add_reading(4), log.values)[1])(ReadingLog([1]))",
+    "expect": "[1, 4]"
+   },
+   {
+    "expr": "ReadingLog([]).average()",
+    "expect": "None",
+    "hidden": true,
+    "label": "среднее для пустого журнала"
+   },
+   {
+    "expr": "ReadingLog([]).max_reading()",
+    "expect": "None",
+    "hidden": true,
+    "label": "максимум для пустого журнала"
+   },
+   {
+    "expr": "(lambda source, log: (source.append(2), log.values)[1])([1], ReadingLog([1]))",
+    "expect": "[1]",
+    "hidden": true,
+    "label": "исходный список не изменяет журнал"
+   },
+   {
+    "expr": "ReadingLog([3, 3]).average()",
+    "expect": "3.0",
+    "hidden": true,
+    "label": "одинаковые показания"
+   },
+   {
+    "expr": "ReadingLog([1]).add_reading(2)",
+    "expect": "None",
+    "hidden": true,
+    "label": "добавление не возвращает значение"
+   }
+  ],
+  "hints": [
+   "Какой метод вызывается при создании объекта? Какие данные нужно сохранить в `self`?",
+   "Чтобы атрибут `values` не зависел от переданного списка, создайте отдельную копию.",
+   "Перед вычислением среднего и максимума проверьте, пуст ли журнал.",
+   "Чтобы `add_reading` ничего не возвращал, не добавляйте после `append` оператор `return` со значением."
+  ],
+  "explanation": "Стартовый код не реализует конструктор и методы журнала, поэтому не сохраняет показания и не поддерживает вычисления. В решении `__init__` создаёт новый список через `list(readings)`, поэтому изменения исходного списка не влияют на `values`. Метод `add_reading` дописывает значение и не имеет явного `return`, а значит возвращает `None`. Перед вычислением среднего и максимума проверяется пустой случай.",
+  "id": "py.oop.g2",
+  "skill": "py.oop",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "code",
+  "difficulty": 3,
+  "lang": "python",
+  "prompt": "Опишите фильм через `@dataclass Movie` с полями в таком порядке: `title` (строка), `year` (целое), `rating` (дробное, по умолчанию `0.0`). Добавьте метод `is_classic()`, возвращающий `True`, только если фильм вышел раньше 1990 года. Два фильма с одинаковыми значениями всех полей должны считаться равными.",
+  "starter": "from dataclasses import dataclass\n\n\n@dataclass\nclass Movie:\n    pass\n",
+  "solution": "from dataclasses import dataclass\n\n\n@dataclass\nclass Movie:\n    title: str\n    year: int\n    rating: float = 0.0\n\n    def is_classic(self):\n        return self.year < 1990\n",
+  "tests": [
+   {
+    "expr": "Movie(\"Матрица\", 1999).title",
+    "expect": "\"Матрица\""
+   },
+   {
+    "expr": "Movie(\"Матрица\", 1999).rating",
+    "expect": "0.0"
+   },
+   {
+    "expr": "Movie(\"Матрица\", 1999).is_classic()",
+    "expect": "False"
+   },
+   {
+    "expr": "Movie(\"A\", 2000) == Movie(\"A\", 2000)",
+    "expect": "True"
+   },
+   {
+    "expr": "Movie(\"A\", 1990).is_classic()",
+    "expect": "False",
+    "hidden": true,
+    "label": "граница: 1990 — уже не классика"
+   },
+   {
+    "expr": "Movie(\"A\", 1989).is_classic()",
+    "expect": "True",
+    "hidden": true,
+    "label": "1989 — классика"
+   },
+   {
+    "expr": "Movie(\"A\", 2000, 8.5) == Movie(\"A\", 2000, 7.0)",
+    "expect": "False",
+    "hidden": true,
+    "label": "разный рейтинг — не равны"
+   },
+   {
+    "expr": "repr(Movie(\"A\", 2000, 8.5))",
+    "expect": "\"Movie(title='A', year=2000, rating=8.5)\"",
+    "hidden": true,
+    "label": "repr, сгенерированный dataclass"
+   }
+  ],
+  "hints": [
+   "Что именно генерирует `@dataclass`? Какие поля должны быть объявлены в теле класса, чтобы появился `__init__`?",
+   "Поля объявляются с аннотациями типов: `title: str`, `year: int`, а значение по умолчанию — `rating: float = 0.0`.",
+   "`is_classic` — обычный метод с `self`; сравните `self.year` с 1990 через `<`."
+  ],
+  "explanation": "`@dataclass` читает аннотации полей и сам создаёт `__init__` (поэтому работают три аргумента и значение по умолчанию), `__repr__` и `__eq__` (поэтому фильмы с одинаковыми полями равны). Метод `is_classic` dataclass не трогает — он пишется как обычно и обращается к `self.year`; строгое `<` даёт `False` ровно на границе 1990.",
+  "id": "py.oop.g4",
+  "skill": "py.oop",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "fix",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Стоимость обычной посылки `Parcel(weight).total()` равна `100 + weight`. Для экспресс-посылки `ExpressParcel(weight, express_fee)` к этой стоимости должна прибавляться только плата `express_fee`. Сейчас стоимость экспресс-посылки вычисляется неверно. Найдите и исправьте ошибку в классе `ExpressParcel`.",
+  "buggy": "class Parcel:\n    def __init__(self, weight):\n        self.weight = weight\n\n    def total(self):\n        return 100 + self.weight\n\n\nclass ExpressParcel(Parcel):\n    def __init__(self, weight, express_fee):\n        super().__init__(weight)\n        self.express_fee = express_fee\n\n    def total(self):\n        return 100 + super().total() + self.express_fee\n",
+  "solution": "class Parcel:\n    def __init__(self, weight):\n        self.weight = weight\n\n    def total(self):\n        return 100 + self.weight\n\n\nclass ExpressParcel(Parcel):\n    def __init__(self, weight, express_fee):\n        super().__init__(weight)\n        self.express_fee = express_fee\n\n    def total(self):\n        return super().total() + self.express_fee\n",
+  "bugType": "logic",
+  "tests": [
+   {
+    "expr": "Parcel(2).total()",
+    "expect": "102"
+   },
+   {
+    "expr": "ExpressParcel(2, 20).total()",
+    "expect": "122"
+   },
+   {
+    "expr": "ExpressParcel(5, 0).total()",
+    "expect": "105"
+   },
+   {
+    "expr": "ExpressParcel(0, 20).total()",
+    "expect": "120",
+    "hidden": true,
+    "label": "экспресс-посылка нулевого веса"
+   },
+   {
+    "expr": "ExpressParcel(3, 15).total()",
+    "expect": "118",
+    "hidden": true,
+    "label": "другая комбинация веса и платы"
+   }
+  ],
+  "hints": [
+   "Метод `super().total()` уже возвращает полную стоимость обычной посылки, включая базовые 100.",
+   "Проследите, сколько раз базовая стоимость `100` попадает в результат экспресс-посылки.",
+   "Оставьте вызов `super().total()` и добавьте только `self.express_fee`."
+  ],
+  "explanation": "В исходном коде базовая стоимость учитывается дважды: один раз внутри `super().total()` и ещё раз как отдельное `100`. Поэтому нужно вернуть `super().total() + self.express_fee`.",
+  "id": "py.oop.g5",
+  "skill": "py.oop",
+  "tags": [
+   "ai"
+  ]
+ },
+ {
+  "kind": "predict",
+  "difficulty": 2,
+  "lang": "python",
+  "prompt": "Определите точный вывод программы. Учитывайте, что `print(task)` использует `__str__`, а `print(repr(task))` выводит представление, созданное `dataclass`.",
+  "code": "from dataclasses import dataclass, field\n\n@dataclass\nclass Task:\n    title: str\n    done: bool = False\n    tags: list[str] = field(default_factory=list)\n\n    def __str__(self):\n        mark = \"✓\" if self.done else \"○\"\n        return f\"{mark} {self.title}\"\n\n\ntask = Task(\"Отчёт\", tags=[\"срочно\"])\nprint(task)\nprint(repr(task))",
+  "answer": "○ Отчёт\nTask(title='Отчёт', done=False, tags=['срочно'])",
+  "explanation": "`print(task)` вызывает `Task.__str__`, поэтому первая строка содержит символ `○` и заголовок. Для `repr(task)` декоратор `@dataclass` автоматически создаёт представление с именем класса и значениями всех полей; `done` равно `False`, а список `tags` содержит строку `'срочно'`.",
+  "id": "py.oop.g6",
+  "skill": "py.oop",
+  "tags": [
+   "ai"
+  ]
  }
 ]
