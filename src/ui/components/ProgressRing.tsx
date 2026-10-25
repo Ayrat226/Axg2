@@ -11,7 +11,7 @@ export function ProgressRing({ value, size = 64, stroke = 7, color = 'var(--acce
         style={{ transition: 'stroke-dashoffset 700ms var(--ease)' }}
       />
       <text x="50%" y={sub ? '47%' : '53%'} textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.24}>{label ?? `${Math.round(v * 100)}%`}</text>
-      {sub && <text x="50%" y="68%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.13} style={{ fill: 'var(--text-dim)', fontWeight: 500 }}>{sub}</text>}
+      {sub && <text x="50%" y="68%" textAnchor="middle" dominantBaseline="middle" fontSize={size * 0.1} style={{ fill: 'var(--text-dim)', fontWeight: 500 }}>{sub}</text>}
     </svg>
   );
 }
