@@ -73,13 +73,16 @@ test('wrong answers: explanations, misconceptions and the mistakes journal', asy
   await onboard(page);
   await page.goto('/#/practice/py.variables');
   await expect(page.getByTestId('exercise')).toBeVisible();
-  await solveCurrent(page, { wrong: true });
+  const e = await solveCurrent(page, { wrong: true });
   const res = page.getByTestId('result');
-  if (await res.isVisible().catch(() => false)) {
-    await expect(res).toHaveAttribute('data-correct', 'false');
-  } else {
+  if (e.kind === 'code' || e.kind === 'fix') {
+    // A failed run is explained but keeps the attempt open; the mistake is recorded once the attempt ends.
     await expect(page.getByTestId('explanation').first()).toBeVisible({ timeout: 60_000 });
+    await expect(res).toHaveCount(0);
+    await page.getByRole('button', { name: 'Показать решение' }).click();
+    await page.getByRole('button', { name: 'Показать', exact: true }).click();
   }
+  await expect(res).toHaveAttribute('data-correct', 'false');
   await page.goto('/#/mistakes');
   await expect(page.getByTestId('mistake-row').first()).toBeVisible();
   expect(errors).toEqual([]);
