@@ -1,0 +1,51 @@
+[
+  {
+    "id": "js.types.g1",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "js.types.g2",
+    "model": "minimax-m3.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "В explanation есть фактическая ошибка: пустая строка названа truthy, хотя в JavaScript пустая строка — falsy. Это противоречит и заданию, и стартовому коду.",
+      "Скрытые тесты не проверяют `undefined`, хотя в условии явно сказано, что `undefined` не должен превращаться в `false`.",
+      "Можно добавить скрытые тесты для других неподдерживаемых чисел, например `parseFlag(2)` или `parseFlag(-1)`, чтобы явно проверить требование «любое другое значение — null»."
+    ]
+  },
+  {
+    "id": "js.types.g3",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "js.types.g4",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "js.types.g5",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Третья подсказка практически раскрывает эталонное решение целиком: «отфильтровать по `Boolean` и взять `length`» непосредственно подсказывает `items.filter(Boolean).length`. Следовало оставить подсказку более общей или убрать упоминание `Boolean` и `length`.",
+      "Утверждения «ложны только…» и «всё остальное truthy» технически неполны в браузерной среде: `document.all` — специальный объект, который считается ложным. Если задание претендует на исчерпывающий список ложных значений, это исключение следует упомянуть либо ограничить задачу стандартными значениями без `document.all`."
+    ]
+  },
+  {
+    "id": "js.types.g6",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  }
+]
