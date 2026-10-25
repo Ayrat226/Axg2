@@ -1,0 +1,44 @@
+[
+  {
+    "id": "py.oop.g1",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.oop.g3",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.oop.g2",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 1,
+    "score": 5
+  },
+  {
+    "id": "py.oop.g4",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.oop.g5",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.oop.g6",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  }
+]

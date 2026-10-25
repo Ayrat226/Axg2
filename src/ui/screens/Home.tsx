@@ -106,7 +106,7 @@ export function Home() {
     { id: 'daily', icon: '🎯', title: 'Вызов дня', color: '#f59e0b', link: '/daily', done: daily.done,
       stat: daily.done ? `Выполнено · ${daily.correct}/${daily.total} верно` : daily.started ? `${daily.answered}/${DAILY_SIZE} · продолжить` : `${DAILY_SIZE} задания · 0/${DAILY_SIZE}`, sub: 'Интерливинг и память' },
     { id: 'bughunt', icon: '🐞', title: 'Охота на баги', color: '#ef4444', link: '/bughunt',
-      stat: `${bugs} ${plural(bugs, 'задание', 'задания', 'заданий')} для охоты`, sub: 'Найди ошибку в готовом коде' },
+      stat: bugs ? `${bugs} ${plural(bugs, 'задание', 'задания', 'заданий')} из ваших тем` : 'Разминка на базовых темах', sub: 'Найди ошибку в готовом коде' },
     { id: 'review', icon: '🔁', title: 'Повторение', color: '#10b981', link: '/review', badge: reviews.length,
       stat: reviews.length ? `${reviews.length} ${plural(reviews.length, 'тема', 'темы', 'тем')} к повторению` : 'Пока нечего повторять', sub: 'Интервалы подбираются сами' },
     { id: 'diag', icon: '🩺', title: 'Умная диагностика', color: '#8b5cf6', link: active ? `/diag/${active}` : '/routes',
