@@ -1,0 +1,47 @@
+[
+  {
+    "id": "py.lists.g1",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  },
+  {
+    "id": "py.lists.g2",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.lists.g3",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.lists.g4",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 4
+  },
+  {
+    "id": "py.lists.g5",
+    "model": "free-deepseek-4.1-flash",
+    "stage": "review-rejected",
+    "score": 3,
+    "issues": [
+      "Подсказки фактически раскрывают решение целиком: `sorted(scores, reverse=True)`, срез `[:n]` и `max(n, 0)` прямо соответствуют всем строкам эталонного решения.",
+      "Не проверяется отдельно явно оговорённый случай отрицательного `n`; для него есть лишь текстовая подсказка, но нет теста, гарантирующего возврат пустого списка."
+    ]
+  },
+  {
+    "id": "py.lists.g6",
+    "model": "minimax-m3.1-flash",
+    "stage": "accepted",
+    "rounds": 0,
+    "score": 5
+  }
+]
