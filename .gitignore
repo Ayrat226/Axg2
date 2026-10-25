@@ -1,0 +1,10 @@
+node_modules
+dist
+public/pyodide
+public/sqljs
+test-results
+playwright-report
+coverage
+.hoplite
+*.log
+screenshots
